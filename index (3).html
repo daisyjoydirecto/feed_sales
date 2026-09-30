@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Inhouse Feeds Sales Dashboard | M. Montesclaros Farms Inc</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg:#ECEEE6; --panel:#FFFFFF; --ink:#1B1E12; --muted:#626752; --rule:#D5D8C8;
+  --olive:#5B6A1C; --olive-2:#8B9B3A; --olive-soft:#E3E8CC; --grain:#B8862E;
+  --teal:#3E6A70; --plum:#6D4260; --sand:#9D9A84;
+  --on-olive:#FFFFFF; --head:#000000; --head-ink:#F2F3EC; --head-muted:#A9AD98;
+  --display:"Barlow Semi Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Barlow","Segoe UI",Roboto,Arial,sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  background:var(--head);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#13150E; --panel:#1C1F15; --ink:#E8EADF; --muted:#A2A790; --rule:#31352A;
+    --olive:#A9BB52; --olive-2:#7D8E33; --olive-soft:#2A3017; --grain:#D9A94E;
+    --teal:#70A4AA; --plum:#B57FA7; --sand:#8C8A75; --on-olive:#13150E;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#13150E; --panel:#1C1F15; --ink:#E8EADF; --muted:#A2A790; --rule:#31352A;
+  --olive:#A9BB52; --olive-2:#7D8E33; --olive-soft:#2A3017; --grain:#D9A94E;
+  --teal:#70A4AA; --plum:#B57FA7; --sand:#8C8A75; --on-olive:#13150E;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--olive);outline-offset:2px}
+
+/* header */
+.top{background:var(--head);color:var(--head-ink)}
+.top-in{max-width:1360px;margin:0 auto;padding:18px 24px 20px;display:flex;flex-wrap:wrap;gap:16px 28px;align-items:flex-end;justify-content:space-between}
+.brand{display:flex;gap:14px;align-items:center}
+.mark{width:44px;height:44px;border-radius:50%;background:var(--olive-2);display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:17px;color:#fff;letter-spacing:.02em;flex:none}
+.brand small{display:block;color:var(--head-muted);font-size:13px}
+.brand h1{margin:0;font-family:var(--display);font-weight:700;font-size:clamp(24px,3.2vw,34px);line-height:1.05;letter-spacing:-.01em}
+.src{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.status{font-size:13px;color:var(--head-muted);max-width:420px}
+.status b{color:var(--head-ink);font-weight:600}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:#8B9B3A;vertical-align:1px}
+.dot.snap{background:#D9A94E}
+.btn{border:1px solid #3a3d33;background:#15170f;color:var(--head-ink);padding:8px 14px;border-radius:6px;cursor:pointer;font-weight:500;font-size:14px;white-space:nowrap}
+.btn:hover{border-color:#8B9B3A}
+.btn.primary{background:#5B6A1C;border-color:#5B6A1C;color:#fff}
+.btn.primary:hover{background:#6c7d24}
+
+/* filters */
+.filters{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--panel);border-bottom:1px solid var(--rule)}
+.filters-in{max-width:1360px;margin:0 auto;padding:10px 24px;display:flex;flex-wrap:wrap;gap:10px 14px;align-items:end}
+.f{display:flex;flex-direction:column;gap:3px;min-width:0}
+.f label{font-size:12px;color:var(--muted)}
+.f select,.f input{background:var(--bg);border:1px solid var(--rule);border-radius:6px;padding:7px 9px;min-width:120px;max-width:230px}
+.f input{min-width:180px}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:6px;overflow:hidden;background:var(--bg)}
+.seg button{border:0;background:transparent;padding:7px 12px;cursor:pointer;font-weight:500;white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--olive);color:var(--on-olive)}
+.reset{margin-left:auto;background:none;border:0;color:var(--olive);cursor:pointer;font-weight:600;padding:8px 4px}
+.chips{max-width:1360px;margin:0 auto;padding:0 24px 8px;display:flex;flex-wrap:wrap;gap:6px}
+.chips:empty{display:none}
+.chip{background:var(--olive-soft);color:var(--ink);border:0;border-radius:999px;padding:3px 10px;font-size:13px;cursor:pointer}
+.chip::after{content:"×";margin-left:6px;color:var(--muted)}
+
+main{max-width:1360px;margin:0 auto;padding:22px 24px 48px}
+
+/* ledger (hero) */
+.ledger{display:grid;grid-template-columns:minmax(260px,1.2fr) 3fr;gap:0;background:var(--panel);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+.ledger-main{padding:22px 24px;border-right:1px solid var(--rule);display:flex;flex-direction:column;justify-content:space-between;gap:14px}
+.ledger-main .lbl{font-size:14px;color:var(--muted)}
+.big{font-family:var(--display);font-weight:700;font-size:clamp(38px,5vw,58px);line-height:.95;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.big .cur{font-size:.55em;color:var(--olive);margin-right:3px;vertical-align:.35em}
+.ledger-main p{margin:0;font-size:14px;color:var(--muted)}
+.ledger-main p b{color:var(--ink);font-weight:600}
+.stats{display:grid;grid-template-columns:repeat(5,1fr)}
+.stat{padding:20px 18px;border-left:1px solid var(--rule)}
+.stat:first-child{border-left:0}
+.stat .lbl{font-size:13px;color:var(--muted)}
+.stat .v{font-family:var(--display);font-weight:600;font-size:28px;line-height:1.1;margin-top:4px;font-variant-numeric:tabular-nums}
+.stat .s{font-size:13px;color:var(--muted);margin-top:2px}
+.spark{grid-column:1/-1;border-top:1px solid var(--rule);padding:12px 18px 14px;display:grid;grid-template-columns:repeat(12,1fr);gap:6px;align-items:end;height:92px}
+.spark button{border:0;padding:0;background:none;cursor:pointer;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-end;height:100%;gap:4px}
+.spark i{display:block;background:var(--olive-2);border-radius:3px 3px 0 0;min-height:2px;transition:background .15s}
+.spark button.off i{background:var(--rule)}
+.spark button:hover i{background:var(--olive)}
+.spark span{font-size:11px;color:var(--muted);text-align:center}
+
+/* panels */
+.grid{display:grid;gap:18px;margin-top:18px}
+.g-2{grid-template-columns:2fr 1fr}
+.g-11{grid-template-columns:1fr 1fr}
+.panel{background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:18px 18px 14px;min-width:0}
+.panel h2{margin:0;font-family:var(--display);font-weight:600;font-size:20px;letter-spacing:-.005em}
+.panel .sub{margin:2px 0 12px;font-size:13px;color:var(--muted)}
+.ph{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+.cv{position:relative;height:300px}
+.cv.tall{height:420px}
+.cv.short{height:260px}
+.hint{font-size:12px;color:var(--muted);margin-top:8px}
+
+/* heatmap */
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+.heat{min-width:880px;font-size:12.5px}
+.heat th,.heat td{padding:0;border:2px solid var(--panel)}
+.heat thead th{font-weight:500;color:var(--muted);padding:4px 2px;text-align:center}
+.heat tbody th{text-align:left;font-weight:500;padding:6px 10px 6px 0;white-space:nowrap;cursor:pointer}
+.heat tbody th:hover{color:var(--olive)}
+.heat td{text-align:right;padding:7px 6px;border-radius:4px;min-width:58px}
+.heat td.tot,.heat th.tot{font-weight:600;background:transparent;color:var(--ink)}
+.heat tr.grp th{padding-top:12px;font-family:var(--display);font-weight:600;color:var(--muted);font-size:13px;cursor:default}
+.legend{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);margin-top:10px}
+.legend .bar{width:140px;height:8px;border-radius:4px;background:linear-gradient(90deg,color-mix(in srgb,var(--olive) 6%,var(--panel)),var(--olive))}
+
+/* detail table */
+.tbl{font-size:14px;min-width:760px}
+.yoyt{min-width:520px;margin-top:14px}
+.up{color:var(--olive)}.down{color:#B4452F}
+.tbl th{position:sticky;top:0;background:var(--panel);text-align:right;font-weight:600;font-size:13px;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--rule);cursor:pointer;white-space:nowrap;user-select:none}
+.tbl th:first-child,.tbl th:nth-child(2),.tbl td:first-child,.tbl td:nth-child(2){text-align:left}
+.tbl th[aria-sort="ascending"]::after{content:" ▲";font-size:10px}
+.tbl th[aria-sort="descending"]::after{content:" ▼";font-size:10px}
+.tbl td{padding:8px 10px;border-bottom:1px solid var(--rule);text-align:right}
+.tbl tbody tr:hover{background:var(--olive-soft)}
+.tbl tfoot td{font-weight:600;border-bottom:0;border-top:2px solid var(--ink)}
+.tbl .feed{font-weight:500}
+.tbl .farmc{color:var(--muted)}
+.share{display:inline-block;width:60px;height:6px;border-radius:3px;background:var(--rule);vertical-align:middle;margin-left:8px;overflow:hidden}
+.share i{display:block;height:100%;background:var(--olive-2)}
+.tbl-wrap{max-height:560px;overflow:auto}
+.more{margin-top:10px;background:none;border:1px solid var(--rule);border-radius:6px;padding:7px 12px;cursor:pointer}
+.empty{padding:40px 10px;text-align:center;color:var(--muted)}
+footer{max-width:1360px;margin:0 auto;padding:0 24px 32px;font-size:12.5px;color:var(--muted)}
+footer p{margin:4px 0;max-width:80ch}
+
+@media (max-width:1100px){
+  .ledger{grid-template-columns:1fr}
+  .ledger-main{border-right:0;border-bottom:1px solid var(--rule)}
+  .g-2,.g-11{grid-template-columns:1fr}
+}
+@media (max-width:760px){
+  .top-in,.filters-in,main,.chips,footer{padding-left:14px;padding-right:14px}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .stat{border-left:0;border-top:1px solid var(--rule)}
+  .stat:nth-child(even){border-left:1px solid var(--rule)}
+  .stat:first-child,.stat:nth-child(2){border-top:0}
+  .stat:nth-child(5){grid-column:1/-1;border-left:0}
+  .f{flex:1 1 42%}
+  .f select,.f input{max-width:none;width:100%;min-width:0}
+  .reset{margin-left:0}
+  .f.m{flex-basis:100%}.f.m .seg{display:flex}.f.m .seg button{flex:1}
+  .cv{height:260px}.cv.tall{height:520px}
+  .filters{position:static}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <div class="brand">
+      <div class="mark" aria-hidden="true">MM</div>
+      <div>
+        <small>M. Montesclaros Farms Inc, Sales Meat and Livestock</small>
+        <h1>Inhouse feeds sales</h1>
+      </div>
+    </div>
+    <div class="src">
+      <div class="status" id="status" role="status"><span class="dot snap"></span>Loading data</div>
+      <button class="btn primary" id="refreshBtn" type="button">Refresh from sheet</button>
+      <button class="btn" id="loadBtn" type="button">Load file</button>
+      <input type="file" id="fileIn" accept=".xlsx,.xlsm,.xls,.ods,.csv,text/csv" hidden>
+    </div>
+  </div>
+</header>
+
+<div class="filters">
+  <div class="filters-in">
+    <div class="f"><label for="fSheet">Sheet tab</label><select id="fSheet"></select></div>
+    <div class="f"><label for="fYear">Year</label><select id="fYear"></select></div>
+    <div class="f"><label for="fFrom">From</label><select id="fFrom"></select></div>
+    <div class="f"><label for="fTo">To</label><select id="fTo"></select></div>
+    <div class="f"><label for="fGroup">Farm group</label><select id="fGroup"></select></div>
+    <div class="f"><label for="fFarm">Farm</label><select id="fFarm"></select></div>
+    <div class="f"><label for="fCat">Feed line</label><select id="fCat"></select></div>
+    <div class="f"><label for="fSearch">Feed type</label><input id="fSearch" type="search" placeholder="Search, e.g. layer 2, IR, pellets"></div>
+    <div class="f m"><label>Measure</label>
+      <div class="seg" role="group" aria-label="Measure">
+        <button type="button" data-metric="sales" aria-pressed="true">Sales ₱</button>
+        <button type="button" data-metric="kg" aria-pressed="false">Volume</button>
+        <button type="button" data-metric="bags" aria-pressed="false">Bags</button>
+      </div>
+    </div>
+    <button class="reset" id="resetBtn" type="button">Clear filters</button>
+  </div>
+  <div class="chips" id="chips"></div>
+</div>
+
+<main>
+  <section class="ledger" aria-label="Summary">
+    <div class="ledger-main">
+      <div>
+        <div class="lbl" id="bigLbl">Feed sales</div>
+        <div class="big" id="bigVal">–</div>
+      </div>
+      <p id="bigNote"></p>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="lbl">Volume</div><div class="v" id="kVol">–</div><div class="s" id="kVolS"></div></div>
+      <div class="stat"><div class="lbl">Bags (50 kg)</div><div class="v" id="kBags">–</div><div class="s" id="kBagsS"></div></div>
+      <div class="stat"><div class="lbl">Avg price per kg</div><div class="v" id="kPrice">–</div><div class="s" id="kPriceS"></div></div>
+      <div class="stat"><div class="lbl">Farms served</div><div class="v" id="kFarms">–</div><div class="s" id="kFarmsS"></div></div>
+      <div class="stat"><div class="lbl">Feed types sold</div><div class="v" id="kFeeds">–</div><div class="s" id="kFeedsS"></div></div>
+      <div class="spark" id="spark" aria-label="Monthly totals; select a month to focus on it"></div>
+    </div>
+  </section>
+
+  <div class="grid g-2">
+    <section class="panel">
+      <div class="ph"><div><h2>Month by month</h2><p class="sub" id="trendSub">Bars show the selected measure; the line shows the average selling price per kg.</p></div></div>
+      <div class="cv"><canvas id="cTrend" aria-label="Monthly trend chart" role="img"></canvas></div>
+      <div class="hint">Select a bar to focus the whole dashboard on that month.</div>
+    </section>
+    <section class="panel">
+      <h2>Share by farm group</h2><p class="sub" id="groupSub"></p>
+      <div class="cv"><canvas id="cGroup" aria-label="Share by farm group" role="img"></canvas></div>
+      <div class="hint">Select a slice to filter by that group.</div>
+    </section>
+  </div>
+
+  <section class="panel" id="yoyPanel" style="margin-top:18px">
+    <h2>Year over year</h2><p class="sub" id="yoySub"></p>
+    <div class="cv short"><canvas id="cYoy" aria-label="Year over year by month" role="img"></canvas></div>
+    <div class="scroll"><table class="tbl yoyt" id="yoyTbl"></table></div>
+  </section>
+
+  <div class="grid g-11">
+    <section class="panel">
+      <h2>Farms ranked</h2><p class="sub" id="farmSub"></p>
+      <div class="cv tall"><canvas id="cFarm" aria-label="Farms ranked" role="img"></canvas></div>
+      <div class="hint">Select a farm to filter by it.</div>
+    </section>
+    <section class="panel">
+      <h2>Top feed types</h2><p class="sub" id="feedSub"></p>
+      <div class="cv tall"><canvas id="cFeed" aria-label="Top feed types" role="img"></canvas></div>
+    </section>
+  </div>
+
+  <div class="grid g-11">
+    <section class="panel">
+      <h2>Feed line mix by month</h2><p class="sub" id="mixSub"></p>
+      <div class="cv short"><canvas id="cMix" aria-label="Feed line mix by month" role="img"></canvas></div>
+    </section>
+    <section class="panel">
+      <h2>Average selling price by feed line</h2><p class="sub">Weighted by kilograms sold, in ₱ per kg.</p>
+      <div class="cv short"><canvas id="cPrice" aria-label="Average price by feed line" role="img"></canvas></div>
+    </section>
+  </div>
+
+  <section class="panel" style="margin-top:18px">
+    <h2>Farm by month</h2><p class="sub" id="heatSub"></p>
+    <div class="scroll"><table class="heat" id="heat"></table></div>
+    <div class="legend"><span>Lower</span><span class="bar"></span><span>Higher</span></div>
+  </section>
+
+  <section class="panel" style="margin-top:18px">
+    <div class="ph"><div><h2>Feed type detail</h2><p class="sub" id="tblSub"></p></div>
+      <div class="seg" role="group" aria-label="Group rows by">
+        <button type="button" data-by="feedfarm" aria-pressed="true">Feed and farm</button>
+        <button type="button" data-by="feed" aria-pressed="false">Feed only</button>
+      </div>
+    </div>
+    <div class="scroll tbl-wrap"><table class="tbl" id="tbl"></table></div>
+    <button class="more" id="moreBtn" type="button" hidden>Show all rows</button>
+  </section>
+</main>
+<footer>
+  <p>Sales are computed as quantity (kg) × selling price for each feed type, farm and month (or taken from an Amount column where a tab has one), because the sheet's price totals show #REF!. Subtotal and negative adjustment rows are left out. Every tab of the workbook that follows the feeds layout is read.</p>
+  <p id="footSrc"></p>
+</footer>
+
+<script>
+const MONTHS = ["JANUARY","FEBRUARY","MARCH","APRIL","MAY","JUNE","JULY","AUGUST","SEPTEMBER","OCTOBER","NOVEMBER","DECEMBER"];
+const MONTHS3 = MONTHS.map(m => m.slice(0, 3));
+
+function parseCSV(text) {
+  const rows = []; let row = []; let f = ""; let q = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (q) {
+      if (ch === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; }
+      else f += ch;
+    } else if (ch === '"') q = true;
+    else if (ch === ",") { row.push(f); f = ""; }
+    else if (ch === "\n" || ch === "\r") {
+      if (ch === "\r" && text[i + 1] === "\n") i++;
+      row.push(f); rows.push(row); row = []; f = "";
+    } else f += ch;
+  }
+  if (f !== "" || row.length) { row.push(f); rows.push(row); }
+  return rows;
+}
+
+function num(v) {
+  if (v == null) return NaN;
+  if (typeof v === "number") return v;
+  let s = String(v).replace(/[\s,₱]|PHP/g, "");
+  if (s === "" || s === "-") return 0;
+  if (s.startsWith("#")) return NaN;
+  let neg = false;
+  if (s.startsWith("(") && s.endsWith(")")) { neg = true; s = s.slice(1, -1); }
+  if (s.startsWith("-")) { neg = true; s = s.slice(1); }
+  const n = parseFloat(s);
+  return isNaN(n) ? NaN : (neg ? -n : n);
+}
+
+function groupOf(farm) {
+  const f = farm.toUpperCase();
+  if (/^CF\b|CONTRACT/.test(f)) return "Contract farms";
+  if (f.includes("POULTRY") || /^MM\s?\d/.test(f)) return "Company poultry";
+  if (f.includes("HOG") || f.includes("PIG") || f.includes("SWINE")) return "Hog farms";
+  if (f.includes("RANCH") || f.includes("STUD")) return "Ranches & stud";
+  return "Other";
+}
+
+function catOf(feed) {
+  const f = feed.toUpperCase();
+  if (/^(HOG|GILT|BOAR|SOW|PIG|PIGLET)/.test(f)) return "Swine";
+  if (f.includes("BROILER BREEDER") || f.includes("PRE-BREEDER")) return "Broiler breeder";
+  if (f.includes("BROILER")) return "Broiler";
+  if (f.includes("COW") || f.includes("CATTLE") || f.includes("GOAT")) return "Cattle";
+  if (f.includes("HORSE")) return "Horse";
+  if (f.includes("LAYER") || f.includes("DUCK")) return "Layer & duck";
+  return "Other";
+}
+
+function monthOf(v) {
+  const s = String(v).trim().toUpperCase();
+  let i = MONTHS.indexOf(s);
+  if (i < 0 && s.length >= 3 && s.length <= 4) i = MONTHS3.indexOf(s.slice(0, 3));
+  return i;
+}
+
+/* input: CSV text or an array of rows. sheet: tab name (used for the year when the header row has none). */
+function buildRecords(input, sheet = "Sheet1") {
+  const rows = typeof input === "string" ? parseCSV(input) : input;
+  const tabYear = (String(sheet).match(/(?:19|20)\d{2}/) || [])[0];
+  const recs = []; let year = null, cols = null, farm = null;
+  for (let ri = 0; ri < rows.length; ri++) {
+    const r = rows[ri].map(v => (v == null ? "" : v));
+    const c0 = String(r[0] ?? "").trim();
+    const mIdx = [];
+    r.forEach((v, i) => { const m = monthOf(v); if (m >= 0 && i > 0) mIdx.push([m, i]); });
+    if (mIdx.length >= 3) {
+      const y = (c0.match(/^(?:19|20)\d{2}$/) || [])[0];
+      year = y ? +y : tabYear ? +tabYear : (year ? year + 1 : new Date().getFullYear());
+      // figure out column roles from the next row (Quantity / Bags / Price / Amount)
+      const hdr = (rows[ri + 1] || []).map(v => String(v ?? "").toLowerCase());
+      cols = mIdx.map(([m, start], k) => {
+        const end = k + 1 < mIdx.length ? mIdx[k + 1][1] : start + 4;
+        const role = { kg: null, bags: null, price: null, amount: null };
+        for (let c = start; c < end; c++) {
+          const h = hdr[c] || "";
+          if (role.kg == null && /qty|quantity|kg|volume/.test(h)) role.kg = c;
+          else if (role.bags == null && /bag/.test(h)) role.bags = c;
+          else if (role.price == null && /price|rate|\/kg/.test(h)) role.price = c;
+          else if (role.amount == null && /amount|sales|total|value/.test(h)) role.amount = c;
+        }
+        if (role.kg == null) { role.kg = start; if (role.bags == null) role.bags = start + 1; if (role.price == null && role.amount == null) role.price = start + 2; }
+        return { m, ...role };
+      });
+      farm = null; continue;
+    }
+    if (!cols || !c0 || /^feed type|^feeds?$|^particulars|^description/i.test(c0)) continue;
+    if (/^(sub)?total|^grand total/i.test(c0)) continue;
+    const hasData = r.slice(1).some(v => String(v).trim() !== "");
+    if (!hasData) { farm = c0.replace(/\s+/g, " "); continue; }
+    if (!farm) continue;
+    const feed = c0.replace(/\s+/g, " ").replace(/\(\s+/g, "(").trim();
+    for (const col of cols) {
+      const kg = num(r[col.kg]);
+      if (!(kg > 0)) continue;
+      const bags = col.bags != null ? num(r[col.bags]) : NaN;
+      let price = col.price != null ? num(r[col.price]) : NaN;
+      const amount = col.amount != null ? num(r[col.amount]) : NaN;
+      if (!(price > 0) && amount > 0) price = amount / kg;
+      const ok = price > 0;
+      recs.push({ sheet, y: year, m: col.m, farm, group: groupOf(farm), feed, cat: catOf(feed), kg,
+        bags: bags > 0 ? bags : kg / 50, price: ok ? price : null,
+        sales: amount > 0 ? amount : ok ? kg * price : 0 });
+    }
+  }
+  return recs;
+}
+
+if (typeof module !== "undefined") module.exports = { buildRecords, parseCSV };
+
+
+/* Published Google Sheet (File > Share > Publish to web > Entire document). */
+const SHEET_BASE = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQFN5dD10O3Re3F4PDX0Zk4rnMrp-iHDeQs3bwYxOs-wD6J3WKO_LNusuu_PK3MbB7ZltHKY1bcdl-a/pub";
+/* Only used if the whole-workbook download fails: ["Tab name", gid] pairs, gid from each tab's URL (#gid=...). */
+const EXTRA_TABS = [
+  // ["2024", 123456789],
+];
+const SNAPSHOT = "Inhouse Feeds Summary,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\n2023,JANUARY,,,FEBRUARY,,,MARCH,,,APRIL,,,MAY,,,JUNE,,,JULY,,,AUGUST,,,SEPTEMBER,,,OCTOBER,,,NOVEMBER,,,DECEMBER,,\nFeed Type, Quantity (KG),In Bags,Selling Price, Quantity (KG),In Bags,Selling Price, Quantity (KG),In Bags,Selling Price, Quantity (KG),In Bags,Selling Price, Quantity (KG),In Bags,Selling Price, Quantity (KG),In Bags,Selling Price, Quantity (KG),In Bags,Selling Price, Quantity (KG),In Bags,Selling Price, Quantity (KG),In Bags,Selling Price, Quantity (KG),In Bags,Selling Price, Quantity (KG),In Bags,Selling Price, Quantity (KG),In Bags,Selling Price\nHog Breeding Farm,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\nBOAR DIET ( DEW),,,,,,,\"  1,050.00 \",21,  39.66 ,,,,,,,,,,\"  1,000.00 \",20,  38.68 ,,,,,,,,,,,,,\"  1,000.00 \",20,  40.26 \nBOAR DIET (NM),\"  4,800.00 \",96,  35.90 ,\"  3,900.00 \",78,  36.70 ,\"  4,750.00 \",95,  36.70 ,\"  4,550.00 \",91,  35.91 ,\"  4,850.00 \",97,  36.23 ,\"  4,000.00 \",80,  35.95 ,\"  4,950.00 \",99,  34.98 ,\"  2,200.00 \",44,  35.82 ,\"  3,050.00 \",61,  37.08 ,\"  2,950.00 \",59,  36.20 ,\"  2,100.00 \",42,  36.51 ,\"  2,250.00 \",45,  36.44 \nBOAR DIET 1 (MED),\"  2,050.00 \",41,  37.53 ,\"  1,750.00 \",35,  37.53 ,  250.00 ,5,  38.19 ,\"  1,550.00 \",31,  37.51 ,  450.00 ,9,  37.62 ,\"  1,050.00 \",21,  37.55 ,\"  1,050.00 \",21,  36.56 ,\"  1,000.00 \",20,  38.91 ,\"  1,100.00 \",22,  38.66 ,\"  1,300.00 \",26,  37.80 ,  900.00 ,18,  38.09 ,\"  1,700.00 \",34,  38.07 \nBOAR DIET 2 (MED),\"  1,050.00 \",21,  36.98 ,\"  1,000.00 \",20,  36.98 ,,,,\"  1,050.00 \",21,  37.01 ,\"  1,000.00 \",20,  37.09 ,\"  1,050.00 \",21,  37.33 ,\"  1,000.00 \",20,  36.16 ,\"  1,000.00 \",20,  36.29 ,\"  1,050.00 \",21,  38.13 ,\"  1,000.00 \",20,  37.32 ,\"  1,050.00 \",21,  37.59 ,,,\nGILT DEVELOPER 1 PELLETS (DEW),\"  6,350.00 \",127,  41.42 ,\"  5,100.00 \",102,  36.65 ,\"  2,000.00 \",40,  38.36 ,\"  3,900.00 \",78,  38.36 ,\"  6,700.00 \",134,  37.82 ,\"  2,250.00 \",45,  35.83 ,\"  2,650.00 \",53,  36.51 ,\"  3,800.00 \",76,  36.36 ,\"  3,750.00 \",75,  36.22 ,\"  2,650.00 \",53,  35.55 ,\"  4,150.00 \",83,  35.55 ,  700.00 ,14,  35.55 \nGILT DEVELOPER 1 PELLETS (MED),\"  9,350.00 \",187,  39.82 ,\"  7,100.00 \",142,  36.47 ,\"  6,250.00 \",125,  38.17 ,\"  8,400.00 \",168,  38.17 ,\"  4,450.00 \",89,  37.89 ,\"  8,800.00 \",176,  36.47 ,\"  2,150.00 \",43,  36.28 ,\"  7,250.00 \",145,  36.29 ,\"  2,750.00 \",55,  36.29 ,\"  5,000.00 \",100,  35.45 ,\"  4,350.00 \",87,  35.83 ,\"  5,750.00 \",115,  35.83 \nGILT DEVELOPER 1 PELLETS (NM),\"  2,600.00 \",52,  38.93 ,\"  7,850.00 \",157,  34.87 ,\"  5,500.00 \",110,  36.53 ,\"  6,200.00 \",124,  36.53 ,\"  7,500.00 \",150,  36.19 ,\"  5,250.00 \",105,  34.94 ,\"  6,250.00 \",125,  34.82 ,\"  7,800.00 \",156,  34.69 ,\"  3,850.00 \",77,  34.53 ,\"  5,300.00 \",106,  33.90 ,\"  2,950.00 \",59,  34.19 ,\"  4,750.00 \",95,  34.08 \nGILT DEVELOPER 2 - PELLETS (MED),\"  3,350.00 \",67,  38.52 ,\"  9,100.00 \",182,  35.20 ,\"  5,750.00 \",115,  36.98 ,\"  9,950.00 \",199,  36.98 ,\"  7,500.00 \",150,  36.60 ,\"  10,300.00 \",206,  34.34 ,\"  7,550.00 \",151,  34.74 ,\"  10,700.00 \",214,  34.76 ,\"  3,050.00 \",61,  34.65 ,\"  4,650.00 \",93,  33.91 ,\"  9,950.00 \",199,  33.91 ,\"  8,050.00 \",161,  34.21 \nGILT DEVELOPER 2 - PELLETS (NM),\"  6,500.00 \",130,  38.17 ,\"  5,400.00 \",108,  34.76 ,\"  8,500.00 \",170,  36.47 ,\"  9,000.00 \",180,  36.47 ,\"  10,700.00 \",214,  36.01 ,\"  11,200.00 \",224,  34.91 ,\"  14,600.00 \",292,  34.40 ,\"  4,500.00 \",90,  34.42 ,\"  8,250.00 \",165,  34.37 ,\"  4,750.00 \",95,  33.59 ,\"  1,450.00 \",29,  33.59 ,\"  7,100.00 \",142,  33.87 \nHOG BOOSTER CRUMBLE (MED),\"  12,450.00 \",249,  66.57 ,\"  15,400.00 \",308,  66.66 ,\"  15,350.00 \",307,  64.98 ,\"  13,600.00 \",272,  64.81 ,\"  17,950.00 \",359,  64.87 ,\"  15,200.00 \",304,  65.47 ,\"  14,050.00 \",281,  60.75 ,\"  11,100.00 \",222,  61.14 ,\"  15,200.00 \",304,  60.41 ,\"  14,550.00 \",291,  59.92 ,\"  10,100.00 \",202,  61.00 ,\"  13,250.00 \",265,  60.75 \nHOG BOOSTER PELLETS- COMMERCIAL,,,,,,,,,,,,,,,,,,,,,,  300.00 ,6,  57.06 ,,,,,,,,,,,,\nHOG GESTATING 1 PELLETS (MED),\"  13,790.00 \",275.8,  36.64 ,\"  17,290.00 \",345.8,  36.64 ,,,,\"  26,250.00 \",525,  37.09 ,\"  16,850.00 \",337,  37.14 ,\"  19,000.00 \",380,  35.18 ,\"  7,150.00 \",143,  35.18 ,\"  10,000.00 \",200,  38.64 ,\"  10,910.00 \",218.2,  38.44 ,\"  19,610.00 \",392.2,  37.80 ,\"  11,250.00 \",225,  38.08 ,\"  17,250.00 \",345,  37.98 \nHOG GESTATING 2 PELLETS (MED),\"  17,060.00 \",341.2,  36.70 ,\"  17,090.00 \",341.8,  36.60 ,\"  17,300.00 \",346,  38.13 ,\"  17,100.00 \",342,  37.32 ,\"  17,150.00 \",343,  37.06 ,\"  17,080.00 \",341.6,  37.56 ,\"  17,140.00 \",342.8,  37.00 ,\"  17,360.00 \",347.2,  36.13 ,\"  17,050.00 \",341,  38.52 ,\"  17,400.00 \",348,  37.98 ,\"  17,250.00 \",345,  38.14 ,,,\nHOG GESTATING PELLETS (DEW),,,,,,,\"  17,150.00 \",343,  38.96 ,,,,,,,,,,\"  10,000.00 \",200,  37.93 ,\"  7,400.00 \",148,  37.93 ,,,,,,,,,,\"  17,200.00 \",344,  40.46 \nHOG GESTATING PELLETS (NM),\"  39,180.00 \",783.6,  35.31 ,\"  32,390.00 \",647.8,  35.45 ,\"  40,110.00 \",802.2,  36.17 ,\"  34,000.00 \",680,  35.79 ,\"  41,950.00 \",839,  35.94 ,\"  35,480.00 \",709.6,  36.07 ,\"  41,920.00 \",838.4,  35.10 ,\"  36,160.00 \",723.2,  36.01 ,\"  36,590.00 \",731.8,  37.16 ,\"  34,710.00 \",694.2,  36.48 ,\"  34,020.00 \",680.4,  36.70 ,\"  34,600.00 \",692,  36.69 \nHOG GROWER 1 PELLETS (MED),\"  4,500.00 \",90,  39.09 ,\"  1,250.00 \",25,  37.52 ,\"  1,000.00 \",20,  34.95 ,\"  2,250.00 \",45,  33.56 ,\"  1,750.00 \",35,  34.19 ,\"  3,000.00 \",60,  35.19 ,\"  3,500.00 \",70,  34.90 ,\"  4,400.00 \",88,  34.87 ,\"  1,000.00 \",20,  34.72 ,\"  3,350.00 \",67,  34.05 ,\"  3,800.00 \",76,  34.37 ,\"  10,500.00 \",210,  34.38 \nHOG GROWER 1 PELLETS (NM),  500.00 ,10,  37.83 ,\"  3,250.00 \",65,  34.53 ,\"  4,750.00 \",95,  34.13 ,\"  1,500.00 \",30,  33.50 ,\"  2,000.00 \",40,  33.87 ,\"  5,550.00 \",111,  34.59 ,\"  4,450.00 \",89,  34.62 ,\"  3,350.00 \",67,  34.55 ,\"  6,850.00 \",137,  34.42 ,\"  8,500.00 \",170,  33.74 ,\"  3,550.00 \",71,  34.04 ,\"  8,750.00 \",175,  34.02 \nHOG GROWER 2 PELLETS (MED),\"  6,850.00 \",137,  38.77 ,\"  6,000.00 \",120,  35.65 ,\"  5,000.00 \",100,  35.12 ,\"  5,700.00 \",114,  34.54 ,\"  6,750.00 \",135,  34.59 ,\"  8,500.00 \",170,  35.20 ,\"  4,050.00 \",81,  35.50 ,\"  6,350.00 \",127,  35.51 ,\"  4,400.00 \",88,  35.41 ,\"  5,150.00 \",103,  35.41 ,\"  5,800.00 \",116,  35.02 ,\"  3,700.00 \",74,  35.02 \nHOG GROWER 2 PELLETS (NM),\"  11,000.00 \",220,  37.78 ,\"  3,500.00 \",70,  34.39 ,\"  5,150.00 \",103,  34.60 ,\"  3,750.00 \",75,  33.12 ,\"  4,000.00 \",80,  34.12 ,\"  2,000.00 \",40,  35.63 ,\"  10,250.00 \",205,  34.67 ,\"  2,250.00 \",45,  34.54 ,\"  10,000.00 \",200,  34.39 ,\"  4,250.00 \",85,  33.73 ,\"  4,400.00 \",88,  33.73 ,\"  3,600.00 \",72,  33.96 \nHOG LACTATING 1 PELLETS (DEW),,,,,,,\"  7,000.00 \",140,  51.85 ,,,,,,,,,,\"  2,650.00 \",53,  43.85 ,\"  3,500.00 \",70,  43.85 ,,,,,,,,,,\"  6,050.00 \",121,  47.36 \nHOG LACTATING 1 PELLETS (MED),\"  22,900.00 \",458,  48.47 ,\"  17,250.00 \",345,  48.05 ,\"  14,050.00 \",281,  46.82 ,\"  30,050.00 \",601,  43.51 ,\"  25,200.00 \",504,  43.51 ,\"  21,100.00 \",422,  42.21 ,\"  14,450.00 \",289,  39.93 ,\"  21,000.00 \",420,  42.63 ,\"  18,400.00 \",368,  43.70 ,\"  20,900.00 \",418,  43.24 ,\"  19,150.00 \",383,  43.58 ,\"  18,200.00 \",364,  43.56 \nHOG LACTATING 2 PELLETS (DEW),,,,,,,\"  9,950.00 \",199,  47.20 ,,,,,,,,,,\"  4,900.00 \",98,  42.33 ,\"  3,250.00 \",65,  42.33 ,,,,,,,,,,\"  3,500.00 \",70,  45.86 \nHOG LACTATING 2 PELLETS (MED),\"  27,950.00 \",559,  44.17 ,\"  21,450.00 \",429,  44.01 ,\"  23,500.00 \",470,  42.67 ,\"  26,950.00 \",539,  41.98 ,\"  29,300.00 \",586,  42.04 ,\"  28,200.00 \",564,  40.68 ,\"  22,200.00 \",444,  38.44 ,\"  24,350.00 \",487,  42.10 ,\"  29,000.00 \",580,  42.17 ,\"  27,300.00 \",546,  41.75 ,\"  17,750.00 \",355,  42.09 ,\"  13,550.00 \",271,  42.09 \nHOG PRE-STARTER PELLETS (MED),\"  93,450.00 \",1869,  60.50 ,\"  80,820.00 \",1616.4,  57.51 ,\"  90,320.00 \",1806.4,  61.99 ,\"  91,060.00 \",1821.2,  59.10 ,\"  100,160.00 \",2003.2,  59.56 ,\"  105,770.00 \",2115.4,  56.68 ,\"  100,800.00 \",2016,  53.82 ,\"  102,950.00 \",2059,  55.31 ,\"  92,000.00 \",1840,  54.90 ,\"  109,400.00 \",2188,  53.80 ,\"  113,050.00 \",2261,  54.69 ,\"  112,450.00 \",2249,  54.92 \nHOG STARTER PELLETS (DEW),\"  4,250.00 \",85,  44.90 ,\"  1,600.00 \",32,  41.11 ,\"  6,500.00 \",130,  40.29 ,\"  5,250.00 \",105,  39.65 ,\"  3,500.00 \",70,  39.82 ,\"  1,750.00 \",35,  40.09 ,\"  2,000.00 \",40,  40.43 ,\"  4,100.00 \",82,  40.43 ,\"  1,750.00 \",35,  40.56 ,\"  1,500.00 \",30,  40.03 ,\"  3,500.00 \",70,  40.43 ,\"  1,400.00 \",28,  40.39 \nHOG STARTER PELLETS (MED),\"  10,750.00 \",215,  46.65 ,\"  7,450.00 \",149,  42.99 ,\"  21,000.00 \",420,  40.61 ,\"  18,500.00 \",370,  39.71 ,\"  20,050.00 \",401,  40.10 ,\"  24,550.00 \",491,  40.34 ,\"  32,550.00 \",651,  40.59 ,\"  27,550.00 \",551,  40.60 ,\"  22,300.00 \",446,  40.61 ,\"  18,400.00 \",368,  40.20 ,\"  21,850.00 \",437,  40.50 ,\"  28,800.00 \",576,  40.43 \nHOG STARTER PELLETS (NM),\"  7,000.00 \",140,  43.59 ,\"  13,550.00 \",271,  41.53 ,\"  8,200.00 \",164,  41.53 ,,,,,,,,,,,,,,,,,,,,,,,,,,,\nHog Growing Farm,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\nGILT DEVELOPER 1 PELLETS (DEW),,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\"  2,150.00 \",43,  35.55 \nGILT DEVELOPER 1 PELLETS (MED),\"  6,000.00 \",120,  39.82 ,\"  3,400.00 \",68,  36.47 ,\"  3,590.00 \",71.8,  38.17 ,\"  8,404.00 \",168.08,  38.17 ,\"  1,694.00 \",33.88,  37.89 ,\"  3,050.00 \",61,  36.47 ,\"  3,900.00 \",78,  36.28 ,\"  2,500.00 \",50,  36.29 ,\"  4,750.00 \",95,  36.29 ,\"  5,750.00 \",115,  35.45 ,\"  5,100.00 \",102,  35.83 ,\"  2,200.00 \",44,  35.83 \nGILT DEVELOPER 1 PELLETS (NM),\"  14,568.00 \",291.36,  38.93 ,\"  7,700.00 \",154,  34.87 ,\"  6,750.00 \",135,  36.53 ,\"  3,100.00 \",62,  36.53 ,\"  6,600.00 \",132,  36.19 ,\"  6,500.00 \",130,  34.94 ,  500.00 ,10,  34.82 ,\"  4,600.00 \",92,  34.69 ,\"  1,250.00 \",25,  34.53 ,\"  8,750.00 \",175,  33.90 ,\"  6,000.00 \",120,  34.19 ,\"  2,500.00 \",50,  34.08 \nGILT DEVELOPER 1 PELLETS - COMMERCIAL (MED),,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\"  1,950.00 \",39,  33.87 \nGILT DEVELOPER 2 - PELLETS (NM),,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\"  4,000.00 \",80,  33.59 ,,,\nHOG FINISHER PELLETS (NM),\"  110,950.00 \",2219,  37.17 ,\"  143,300.00 \",2866,  35.07 ,\"  146,950.00 \",2939,  33.71 ,\"  137,500.00 \",2750,  33.40 ,\"  166,400.00 \",3328,  33.92 ,\"  202,150.00 \",4043,  33.54 ,\"  242,550.00 \",4851,  34.17 ,\"  136,400.00 \",2728,  35.04 ,\"  89,950.00 \",1799,  36.16 ,\"  116,250.00 \",2325,  35.83 ,\"  89,300.00 \",1786,  36.13 ,\"  54,100.00 \",1082,  36.13 \nHOG GROWER 1 PELLETS (MED),\"  40,150.00 \",803,  39.09 ,\"  92,500.00 \",1850,  37.52 ,\"  105,250.00 \",2105,  34.95 ,\"  103,200.00 \",2064,  33.56 ,\"  66,750.00 \",1335,  34.19 ,\"  100,450.00 \",2009,  35.19 ,\"  122,300.00 \",2446,  34.90 ,\"  100,050.00 \",2001,  34.87 ,\"  84,900.00 \",1698,  34.72 ,\"  102,800.00 \",2056,  34.05 ,\"  93,050.00 \",1861,  34.37 ,\"  95,150.00 \",1903,  34.38 \nHOG GROWER 1 PELLETS (NM),\"  144,200.00 \",2884,  37.83 ,\"  84,150.00 \",1683,  34.53 ,\"  74,800.00 \",1496,  34.13 ,\"  86,500.00 \",1730,  33.50 ,\"  115,850.00 \",2317,  33.87 ,\"  94,200.00 \",1884,  34.59 ,\"  79,400.00 \",1588,  34.62 ,\"  95,500.00 \",1910,  34.55 ,\"  125,300.00 \",2506,  34.42 ,\"  90,900.00 \",1818,  33.74 ,\"  85,950.00 \",1719,  34.04 ,\"  90,850.00 \",1817,  34.02 \nHOG STARTER PELLETS (DEW),\"  38,800.00 \",776,  44.90 ,\"  33,850.00 \",677,  41.11 ,\"  39,000.00 \",780,  40.29 ,\"  53,900.00 \",1078,  39.65 ,\"  50,650.00 \",1013,  39.82 ,\"  43,600.00 \",872,  40.09 ,\"  41,100.00 \",822,  40.43 ,\"  55,950.00 \",1119,  40.43 ,\"  40,550.00 \",811,  40.56 ,\"  47,250.00 \",945,  40.03 ,\"  59,650.00 \",1193,  40.43 ,\"  58,150.00 \",1163,  40.39 \nHOG STARTER PELLETS (MED),\"  50,750.00 \",1015,  46.65 ,\"  61,450.00 \",1229,  42.99 ,\"  69,450.00 \",1389,  40.61 ,\"  102,200.00 \",2044,  39.71 ,\"  100,250.00 \",2005,  40.10 ,\"  115,750.00 \",2315,  40.34 ,\"  113,600.00 \",2272,  40.59 ,\"  112,850.00 \",2257,  40.60 ,\"  131,100.00 \",2622,  40.61 ,\"  119,200.00 \",2384,  40.20 ,\"  104,500.00 \",2090,  40.50 ,\"  99,200.00 \",1984,  40.43 \nHOG STARTER PELLETS (NM),\"  50,550.00 \",1011,  43.59 ,\"  44,000.00 \",880,  41.53 ,\"  35,100.00 \",702,  41.53 ,,,,,,,,,,,,,,,,,,,,,,,,,,,\nHOG STARTER PELLETS - COMMERCIAL (MED),,,,,,,,,,,,,,,,,,,\"  1,750.00 \",35,  39.21 ,,,,,,,,,,,,,,,\nPoultry - MM1,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\nBROILER BREEDER DEVELOPER CRUMBLE - COBB,\"  80,995.60 \",\"  1,619.91 \",  34.75 ,\"  191,056.80 \",\"  3,821.14 \",  34.53 ,\"  206,123.60 \",\"  4,122.47 \",  34.43 ,\"  18,024.00 \",  360.48 ,  34.43 ,,,,,,,,,,,,,,,,,,,,,,,,\nBROILER BREEDER DEVELOPER CRUMBLE A (BBDC-A),\"  26,620.00 \",  532.40 ,  34.97 ,\"  83,987.60 \",\"  1,679.75 \",  34.85 ,\"  45,792.40 \",  915.85 ,  34.84 ,\"  6,500.00 \",  130.00 ,  34.84 ,,,,,,,,,,,,,,,,,,,,,,,,\nBROILER BREEDER GROWER CRUMBLE (COBB),\"  74,558.40 \",\"  1,491.17 \",  36.37 ,\"  23,709.40 \",  474.19 ,  36.30 ,\"  28,269.00 \",  565.38 ,  36.32 ,\"  25,781.00 \",  515.62 ,  36.07 ,\"  2,190.20 \",  43.80 ,  36.07 ,\"  12,809.80 \",  256.20 ,  36.07 ,,,,,,,,,,,,,,,,,,\nBROILER BREEDER LAYER 1 CRUMBLE (COBB),,,,,,,\"  12,065.00 \",  241.30 ,  34.94 ,\"  239,695.40 \",\"  4,793.91 \",  34.75 ,\"  283,912.00 \",\"  5,678.24 \",  34.98 ,\"  259,560.60 \",\"  5,191.21 \",  34.93 ,\"  35,317.00 \",  706.34 ,  34.93 ,,,,,,,,,,,,,,,\nBROILER BREEDER LAYER 2 CRUMBLE (COBB),,,,,,,,,,,,,,,,\"  18,170.00 \",  363.40 ,  34.13 ,\"  247,003.60 \",\"  4,940.07 \",  34.44 ,\"  279,256.40 \",\"  5,585.13 \",  34.55 ,\"  264,611.00 \",\"  5,292.22 \",  34.46 ,\"  263,928.00 \",\"  5,278.56 \",  34.03 ,\"  244,184.60 \",\"  4,883.69 \",  34.43 ,\"  237,058.00 \",\"  4,741.16 \",  34.34 \nBROILER BREEDER GROWER CRUMBLE-A ROSS(BBGC-A ROSS),\"  93,239.20 \",\"  1,864.78 \",  35.12 ,\"  26,390.40 \",  527.81 ,  35.53 ,\"  19,604.80 \",  392.10 ,  35.12 ,\"  6,571.00 \",  131.42 ,  35.58 ,,,,,,,,,,,,,,,,,,,,,,,,\nBROILER BREEDER LAYER 1 CRUMBLE-A (BBL1C-A),,,,,,,,,,\"  119,214.60 \",\"  2,384.29 \",  34.89 ,\"  222,956.80 \",\"  4,459.14 \",  35.03 ,\"  202,695.60 \",\"  4,053.91 \",  34.93 ,\"  50,433.00 \",\"  1,008.66 \",  34.93 ,,,,,,,,,,,,,,,\nBROILER BREEDER LAYER 2 CRUMBLE-A (BBL2C-A),,,,,,,,,,,,,,,,\"  19,108.00 \",  382.16 ,  34.47 ,\"  174,544.60 \",\"  3,490.89 \",  34.57 ,\"  223,548.80 \",\"  4,470.98 \",  34.77 ,\"  213,005.60 \",\"  4,260.11 \",  34.68 ,\"  215,353.00 \",\"  4,307.06 \",  35.14 ,\"  200,105.60 \",\"  4,002.11 \",  34.83 ,\"  187,994.40 \",\"  3,759.89 \",  35.65 \nBROILER BREEDER MALE CRUMBLE (COBB),,,,,,,,,,  408.00 ,  8.16 ,  35.43 ,\"  24,742.00 \",  494.84 ,  35.43 ,\"  12,398.00 \",  247.96 ,  35.45 ,\"  25,204.80 \",  504.10 ,  35.93 ,\"  24,162.60 \",  483.25 ,  36.08 ,\"  21,734.60 \",  434.69 ,  35.90 ,\"  21,475.80 \",  429.52 ,  35.58 ,\"  19,728.00 \",  394.56 ,  35.84 ,\"  18,742.00 \",  374.84 ,  35.73 \nBROILER BREEDER MALE CRUMBLE-A (BBMC-A),,,,,,,,,,\"  12,740.20 \",  254.80 ,  32.72 ,\"  20,122.20 \",  402.44 ,  32.72 ,\"  19,192.60 \",  383.85 ,  32.75 ,\"  19,158.40 \",  383.17 ,  33.25 ,\"  18,178.00 \",  363.56 ,  33.40 ,\"  16,311.60 \",  326.23 ,  33.22 ,\"  15,680.20 \",  313.60 ,  32.64 ,\"  13,670.40 \",  273.41 ,  32.98 ,\"  11,879.60 \",  237.59 ,  32.89 \nBROILER PRE-BREEDER CRUMBLE A (BPBC-A),,,,\"  30,521.80 \",  610.44 ,  34.85 ,\"  117,120.20 \",\"  2,342.40 \",  34.85 ,\"  58,608.00 \",\"  1,172.16 \",  34.85 ,,,,,,,,,,,,,,,,,,,,,,,,\nPoultry - MM2,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\nBROILER BREEDER GROWER CRUMBLE - IR(BBGC- IR),,,,,,,\"  2,519.00 \",  50.38 ,35.57,\"  40,516.10 \",  810.32 ,35.36,\"  48,670.20 \",  973.40 ,35.615,\"  57,423.80 \",\"  1,148.48 \",36.15,\"  42,467.20 \",  849.34 ,36.96,\"  13,153.70 \",  263.07 ,36.57,,,,,,,,,,,,\nBROILER BREEDER LAYER 1 CRUMBLE (IR),,,,,,,,,,,,,,,,,,,,,,\"  33,329.00 \",  666.58 ,35.32,\"  103,951.30 \",\"  2,079.03 \",35.92,\"  117,360.70 \",\"  2,347.21 \",35.05,\"  26,559.00 \",  531.18 ,35.25,,,\nBROILER BREEDER LAYER 2 CRUMBLE A ( IR),,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\"  79,093.80 \",\"  1,581.88 \",34.86,\"  95,609.00 \",\"  1,912.18 \",34.71\nBROILER BREEDER LAYER 2 CRUMBLE (SASSO),\"  3,601.60 \",  72.03 ,  35.48 ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\nBROILER BREEDER MALE CRUMBLE (IR),,,,,,,,,,,,,,,,,,,,,,\"  2,394.00 \",  47.88 ,33.57,\"  13,157.20 \",  263.14 ,34.16,\"  9,392.40 \",  187.85 ,32.9,\"  9,073.60 \",  181.47 ,33.01,\"  8,378.80 \",  167.58 ,32.85\nBROILER BREEDER MALE CRUMBLE (SASSO),  816.00 ,  16.32 ,  35.90 ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\nBROILER BREEDER PRE-BREEDER CRUMBLE-IR,,,,,,,,,,,,,,,,,,,\"  36,646.80 \",  732.94 ,37.08,\"  50,853.20 \",\"  1,017.06 \",35.42,,,,,,,,,,,,\nBROILER BREEDER STARTER CRUMBLE - IR (BBSC-IR),,,,,,,\"  24,364.20 \",  487.28 ,  40.60 ,\"  1,635.80 \",  32.72 ,  40.50 ,,,,,,,,,,,,,,,,,,,,,,,,\nBROILER GROW OUT FINISHER 2 ( SASSO),\"  1,693.40 \",  33.87 ,  36.20 ,  297.60 ,  5.95 ,  36.20 ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\nPoultry - MM3,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\nBROILER BREEDER GROWER CRUMBLE-A ROSS(BBGC-A ROSS),,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\"  3,374.00 \",  67.48 ,  35.64 \nBROILER BREEDER LAYER 1 CRUMBLE (SASSO),,,,,,,,,,\"  5,696.50 \",  113.93 ,  35.77 ,\"  7,153.50 \",  143.07 ,  35.77 ,,,,,,,,,,,,,,,,,,,,,\nBROILER BREEDER LAYER 2 CRUMBLE (COBB),,,,\"  9,403.00 \",  188.06 ,  34.32 ,\"  1,297.00 \",  25.94 ,  34.32 ,,,,\"  9,746.30 \",  194.93 ,  33.46 ,\"  16,135.00 \",  322.70 ,  34.13 ,\"  14,546.70 \",  290.93 ,  34.44 ,\"  15,932.00 \",  318.64 ,  34.55 ,,,,,,,,,,,,\nBROILER BREEDER LAYER 2 CRUMBLE - B (COBB),,,,,,,,,,,,,,,,,,,,,,,,,\"  16,711.00 \",  334.22 ,  34.46 ,\"  21,379.00 \",  427.58 ,  34.03 ,,,,,,\nBROILER BREEDER LAYER 2 CRUMBLE A ( IR),,,,,,,,,,,,,,,,,,,,,,,,,,,,  667.00 ,  13.34 ,  34.84 ,\"  24,727.00 \",  494.54 ,  34.86 ,\"  19,621.50 \",  392.43 ,  34.71 \nBROILER BREEDER LAYER 3 CRUMBLE A (IR),  362.00 ,  7.24 ,  33.97 ,  820.00 ,  16.40 ,  33.97 ,  260.00 ,  5.20 ,  33.97 ,,,,,,,,,,,,,,,,,,,,,,,,,,,\nBROILER BREEDER MALE CRUMBLE (SASSO),,,,,,,,,,\"  1,071.50 \",  21.43 ,  35.01 ,  928.50 ,  18.57 ,  35.01 ,,,,,,,,,,,,,,,,,,,,,\nBROILER BREEDER STARTER CRUMBLE 4MM - A ROSS(BBSC 4MM -A ROSS),,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\"  3,500.00 \",  70.00 ,  40.96 \nBROILER CHICK BOOSTER CRUMBLE - (COBB) COMMERCIAL,,,,,,,,,,,,,,,,,,,,,,,,,\"  1,050.00 \",  21.00 ,  42.88 ,,,,,,,,,\nBROILER GROW OUT FINISHER 1 ( SASSO),\"  2,876.00 \",  57.52 ,  36.41 ,\"  1,090.00 \",  21.80 ,  36.41 ,  385.00 ,  7.70 ,  36.41 ,  525.00 ,  10.50 ,  36.41 ,,,,,,,,,,,,,,,,,,,,,,,,\nBROILER GROW OUT FINISHER 2 ( SASSO),\"  13,987.00 \",  279.74 ,  36.20 ,\"  2,649.20 \",  52.98 ,  36.20 ,\"  3,743.00 \",  74.86 ,  36.21 ,\"  9,643.00 \",  192.86 ,  36.21 ,,,,,,,,,,,,,,,,,,,,,,,,\nBROILER GROW OUT STARTER CRUMBLE ( SASSO),\"  1,030.00 \",  20.60 ,  39.69 ,\"  1,321.00 \",  26.42 ,  39.69 ,,,,,,,,,,,,,  149.00 ,  2.98 ,  37.75 ,  801.00 ,  16.02 ,  36.62 ,  583.00 ,  11.66 ,  39.45 ,\"  1,652.00 \",  33.04 ,  38.91 ,\"  1,020.00 \",  20.40 ,  40.54 ,  845.00 ,  16.90 ,  40.54 \nBROILER GROW OUT STARTER MASH ( SASSO),  658.00 ,  13.16 ,  39.08 ,  160.00 ,  3.20 ,  39.08 ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\nBROILER GROWER CRUMBLE ( SASSO),\"  1,854.00 \",  37.08 ,  37.12 ,  296.00 ,  5.92 ,  38.18 ,\"  1,651.00 \",  33.02 ,  38.18 ,  103.00 ,  2.06 ,  38.18 ,,,,,,,,,,,,,,,,,,,,,,  140.00 ,  2.80 ,  39.61 \nBROILER GROWER PELLETS COBB- COMMERCIAL,,,,,,,\"  8,150.00 \",  163.00 ,  38.47 ,,,,,,,,,,,,,,,,,,,\"  9,950.00 \",  199.00 ,  40.51 ,\"  3,800.00 \",  76.00 ,  40.51 ,,,\nBROILER STARTER CRUMBLE - (COBB) COMMERCIAL,,,,,,,,,,,,,,,,,,,,,,,,,\"  1,107.00 \",  22.14 ,  39.94 ,\"  1,843.00 \",  36.86 ,  39.94 ,,,,,,\nPoultry - MM4,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\nBROILER BREEDER GROWER CRUMBLE - IR(BBGC- IR),,,,,,,,,,,,,,,,,,,,,,\"  1,328.60 \",  26.57 ,37.33,\"  34,343.40 \",  686.87 ,35.95,\"  39,740.20 \",  794.80 ,35.83,\"  46,444.40 \",  928.89 ,36.34,\"  46,436.80 \",  928.74 ,35.85\nBROILER BREEDER LAYER 1 CRUMBLE - B (COBB),\"  105,145.60 \",\"  2,102.91 \",  33.98 ,\"  101,854.80 \",\"  2,037.10 \",  34.23 ,\"  109,098.20 \",\"  2,181.96 \",  34.02 ,\"  20,242.20 \",  404.84 ,  34.02 ,,,,,,,,,,,,,,,,,,,,,,,,\nBROILER BREEDER LAYER 2 CRUMBLE - B (COBB),,,,,,,,,,\"  29,050.00 \",  581.00 ,  33.46 ,,,,,,,,,,\"  6,750.00 \",  135.00 ,34.55,,,,,,,,,,,,\nBROILER BREEDER MALE CRUMBLE - B (COBB),\"  10,926.80 \",  218.54 ,  33.61 ,\"  9,379.00 \",  187.58 ,  33.35 ,\"  9,822.60 \",  196.45 ,  33.40 ,\"  4,026.60 \",  80.53 ,  33.40 ,,,,,,,,,,,,,,,,,,,,,,,,\nBROILER BREEDER STARTER CRUMBLE 4MM - IR (BBSC 4MM -IR),,,,,,,,,,,,,,,,,,,,,,\"  22,050.00 \",  441.00 ,41.31,,,,,,,,,,,,\nBROILER BREEDER PRE-BREEDER CRUMBLE-IR,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\"  18,894.00 \",  377.88 ,35.05\nCF - GF-IB,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\nBROILER BREEDER GROWER CRUMBLE - IR(BBGC- IR),,,,,,,,,,,,,\"  13,043.07 \",  260.86 ,35.615,\"  46,782.28 \",  935.65 ,36.15,\"  56,900.10 \",\"  1,138.00 \",37.43,\"  73,554.45 \",\"  1,471.09 \",37.33,\"  35,229.43 \",  704.59 ,35.95,\"  9,081.41 \",  181.63 ,35.83,  759.26 ,  15.19 ,36.34,,,\nBROILER BREEDER LAYER 1 CRUMBLE (IR),,,,,,,,,,,,,,,,,,,,,,,,,,,,\"  33,661.94 \",  673.24 ,35.05,\"  111,602.30 \",\"  2,232.05 \",35.25,\"  110,235.76 \",\"  2,204.72 \",35.08\nBROILER BREEDER LAYER 2 CRUMBLE A ( IR),,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\"  15,530.49 \",  310.61 ,34.71\nBROILER BREEDER MALE CRUMBLE (IR),,,,,,,,,,,,,,,,,,,,,,,,,,,,\"  3,018.86 \",  60.38 ,32.9,\"  9,992.82 \",  199.86 ,33.01,\"  10,780.31 \",  215.61 ,32.85\nBROILER BREEDER PRE-BREEDER CRUMBLE-IR,,,,,,,,,,,,,,,,,,,,,,,,,\"  57,908.68 \",\"  1,158.17 \",35.85,\"  61,516.23 \",\"  1,230.32 \",35.13,\"  2,413.29 \",  48.27 ,35.5,,,\nBROILER BREEDER STARTER CRUMBLE - IR (BBSC-IR),,,,,,,,,,\"  5,678.17 \",  113.56 ,40.5,\"  24,921.83 \",  498.44 ,40.75,,,,,,,,,,,,,,,,,,,,,\nCF - JF-DM,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\nBROILER BREEDER GROWER CRUMBLE - IR(BBGC- IR),,,,,,,,,,,,,,,,,,,\"  75,223.95 \",\"  1,504.48 \",37.43,\"  117,435.22 \",\"  2,348.70 \",37.33,\"  124,442.89 \",\"  2,488.86 \",35.95,\"  111,819.76 \",\"  2,236.40 \",35.83,\"  24,287.76 \",  485.76 ,36.34,\"  5,940.42 \",  118.81 ,35.85\nBROILER BREEDER LAYER 1 CRUMBLE (IR),,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\"  6,239.80 \",  124.80 ,35.25,\"  173,657.55 \",\"  3,473.15 \",35.08\nBROILER BREEDER MALE CRUMBLE (IR),,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\"  12,452.02 \",  249.04 ,32.85\nBROILER BREEDER STARTER CRUMBLE 4MM - IR (BBSC 4MM -IR),,,,,,,,,,,,,,,,,,,\"  16,468.81 \",  329.38 ,41.13,,,,,,,,,,,,,,,\nBROILER BREEDER STARTER CRUMBLE - IR (BBSC-IR),,,,,,,,,,,,,,,,\"  37,631.19 \",  752.62 ,40.82,,,,,,,,,,,,,,,,,,\nBROILER BREEDER PRE-BREEDER CRUMBLE-IR,,,,,,,,,,,,,,,,,,,,,,,,,,,,\"  58,555.17 \",\"  1,171.10 \",35.13,\"  154,572.87 \",\"  3,091.46 \",35.5,\"  10,571.96 \",  211.44 ,35.05\nCF - KF-IM,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\nBROILER BREEDER GROWER CRUMBLE - IR(BBGC- IR),,,,\"  36,090.79 \",  721.82 ,  35.48 ,\"  96,115.29 \",\"  1,922.31 \",  35.57 ,\"  108,628.00 \",\"  2,172.56 \",  35.36 ,\"  135,495.44 \",\"  2,709.91 \",  35.62 ,\"  35,194.74 \",  703.89 ,  36.15 ,\"  10,925.74 \",  218.51 ,  37.43 ,,,,,,,,,,,,,,,\nBROILER BREEDER LAYER 1 CRUMBLE (IR),,,,,,,,,,,,,,,,,,,\"  100,135.80 \",\"  2,002.72 \",  34.83 ,\"  235,034.60 \",\"  4,700.69 \",  35.32 ,\"  204,629.20 \",\"  4,092.58 \",  35.92 ,\"  29,850.40 \",  597.01 ,  35.05 ,,,,,,\nBROILER BREEDER LAYER 2 CRUMBLE A ( IR),,,,,,,,,,,,,,,,,,,,,,,,,\"  28,929.40 \",  578.59 ,  34.85 ,\"  221,211.40 \",\"  4,424.23 \",  34.84 ,\"  228,779.40 \",\"  4,575.59 \",  34.86 ,\"  43,679.80 \",  873.60 ,  34.71 \nBROILER BREEDER LAYER 3 CRUMBLE A (IR),,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\"  188,122.80 \",\"  3,762.46 \",  32.71 \nBROILER BREEDER MALE CRUMBLE (IR),,,,,,,,,,,,,,,,,,,\"  9,908.50 \",  198.17 ,  33.32 ,\"  22,072.00 \",  441.44 ,  33.57 ,\"  21,478.20 \",  429.56 ,  34.16 ,\"  21,271.40 \",  425.43 ,  32.90 ,\"  19,971.00 \",  399.42 ,  33.01 ,\"  19,443.70 \",  388.87 ,  32.85 \nBROILER BREEDER STARTER CRUMBLE - IR (BBSC-IR),\"  12,730.40 \",  254.61 ,  40.66 ,\"  34,919.60 \",  698.39 ,  40.60 ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\nBROILER BREEDER STARTER MASH - IR (BBSM- IR),\"  8,332.60 \",  166.65 ,  38.61 ,  767.40 ,  15.35 ,  38.61 ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\nBROILER BREEDER PRE-BREEDER CRUMBLE-IR,,,,,,,,,,,,,\"  7,595.34 \",  151.91 ,  34.86 ,\"  141,517.88 \",\"  2,830.36 \",  34.88 ,\"  90,936.78 \",\"  1,818.74 \",  37.08 ,,,,,,,,,,,,,,,\nCF - RG1-CM,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\nBROILER BREEDER GROWER CRUMBLE-A ROSS(BBGC-A ROSS),,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\"  18,322.90 \",  366.46 ,  35.64 ,\"  62,995.20 \",\"  1,259.90 \",  35.64 \nBROILER BREEDER STARTER CRUMBLE 3MM - A ROSS(BBSC 3MM -A ROSS),,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\"  8,150.00 \",  163.00 ,  40.96 ,,,\nBROILER BREEDER STARTER CRUMBLE 4MM - A ROSS(BBSC 4MM -A ROSS),,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\"  29,800.00 \",  596.00 ,  40.96 ,,,\nCF - SB (RG2-CM),,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\nBROILER BREEDER GROWER CRUMBLE - IR(BBGC- IR),\"  104,936.80 \",\"  2,098.74 \",  35.64 ,\"  82,365.70 \",\"  1,647.31 \",  35.48 ,\"  20,771.00 \",  415.42 ,  35.57 ,\"  1,218.30 \",  24.37 ,  35.36 ,,,,,,,,,,,,,,,,,,,,,,,,\nBROILER BREEDER LAYER 1 CRUMBLE (IR),,,,,,,\"  19,447.50 \",  388.95 ,  35.00 ,\"  183,798.70 \",\"  3,675.97 \",  35.02 ,\"  205,208.90 \",\"  4,104.18 \",  35.21 ,\"  71,494.90 \",\"  1,429.90 \",  34.83 ,,,,,,,,,,,,,,,,,,\nBROILER BREEDER LAYER 2 CRUMBLE A ( IR),,,,,,,,,,,,,,,,\"  121,608.60 \",\"  2,432.17 \",  34.58 ,\"  196,179.60 \",\"  3,923.59 \",  34.88 ,\"  127,654.80 \",\"  2,553.10 \",  34.72 ,\"  12,657.00 \",  253.14 ,  34.85 ,,,,,,,,,\nBROILER BREEDER LAYER 3 CRUMBLE A (IR),,,,,,,,,,,,,,,,,,,,,,\"  48,928.90 \",  978.58 ,  33.80 ,\"  183,316.80 \",\"  3,666.34 \",  34.81 ,\"  178,438.40 \",\"  3,568.77 \",  33.09 ,\"  162,195.70 \",\"  3,243.91 \",  32.84 ,\"  109,720.20 \",\"  2,194.40 \",  32.71 \nBROILER BREEDER MALE CRUMBLE (IR),,,,,,,\"  1,956.80 \",  39.14 ,  32.95 ,\"  17,166.00 \",  343.32 ,  32.81 ,\"  17,072.00 \",  341.44 ,  33.12 ,\"  14,808.10 \",  296.16 ,  32.76 ,\"  14,662.70 \",  293.25 ,  33.32 ,\"  12,669.00 \",  253.38 ,  33.57 ,\"  14,347.90 \",  286.96 ,  34.16 ,\"  13,128.40 \",  262.57 ,  32.90 ,\"  11,793.80 \",  235.88 ,  33.01 ,\"  7,095.30 \",  141.91 ,  32.85 \nBROILER BREEDER PRE-BREEDER CRUMBLE-IR,,,,\"  47,411.00 \",  948.22 ,  34.84 ,\"  129,639.00 \",\"  2,592.78 \",  34.84 ,,,,,,,,,,,,,,,,,,,,,,,,,,,\nCF - SB-CJ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\nBROILER BREEDER GROWER CRUMBLE - IR(BBGC- IR),,,,,,,,,,,,,,,,\"  24,123.43 \",  482.47 ,36.15,\"  73,624.11 \",\"  1,472.48 \",37.43,\"  88,902.79 \",\"  1,778.06 \",37.33,\"  104,570.24 \",\"  2,091.40 \",35.95,\"  24,706.86 \",  494.14 ,35.83,\"  7,972.57 \",  159.45 ,36.34,,,\nBROILER BREEDER LAYER 1 CRUMBLE (IR),,,,,,,,,,,,,,,,,,,,,,,,,,,,  100.00 ,  2.00 ,35.05,\"  124,184.72 \",\"  2,483.69 \",35.25,\"  189,960.92 \",\"  3,799.22 \",35.08\nBROILER BREEDER LAYER 2 CRUMBLE (COBB),\"  162,696.63 \",\"  3,253.93 \",  34.46 ,\"  71,936.18 \",\"  1,438.72 \",  34.32 ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\nBROILER BREEDER MALE CRUMBLE (IR),,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\"  11,468.74 \",  229.37 ,33.01,\"  19,376.38 \",  387.53 ,32.85\nBROILER BREEDER MALE CRUMBLE (COBB),\"  10,365.80 \",  207.32 ,  34.56 ,\"  4,191.40 \",  83.83 ,  34.37 ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\nBROILER BREEDER PRE-BREEDER CRUMBLE-IR,,,,,,,,,,,,,,,,,,,,,,,,,\"  11,278.48 \",  225.57 ,35.85,\"  130,853.49 \",\"  2,617.07 \",35.13,\"  31,218.03 \",  624.36 ,35.5,,,\nBROILER BREEDER STARTER CRUMBLE - IR (BBSC-IR),,,,,,,,,,,,,\"  19,566.43 \",  391.33 ,  40.75 ,\"  35,309.29 \",  706.19 ,  40.82 ,,,,,,,,,,,,,,,,,,\nBROILER BREEDER STARTER CRUMBLE 4MM - IR (BBSC 4MM -IR),,,,,,,,,,,,,,,,,,,  124.28 ,  2.49 ,  41.13 ,,,,,,,,,,,,,,,\nCF - SB-KM,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\nBROILER BREEDER GROWER CRUMBLE - IR(BBGC- IR),\"  65,330.26 \",\"  1,306.61 \",  35.64 ,\"  86,541.54 \",\"  1,730.83 \",  35.48 ,\"  112,488.16 \",\"  2,249.76 \",  35.57 ,\"  102,431.83 \",\"  2,048.64 \",  35.36 ,\"  20,793.11 \",  415.86 ,  35.62 ,\"  13,070.84 \",  261.42 ,  36.15 ,,,,,,,,,,,,,,,,,,\nBROILER BREEDER LAYER 1 CRUMBLE (IR),,,,,,,,,,,,,\"  11,130.88 \",  222.62 ,  35.21 ,\"  132,902.99 \",\"  2,658.06 \",  34.83 ,\"  221,558.02 \",\"  4,431.16 \",  35.39 ,\"  163,245.02 \",\"  3,264.90 \",  35.32 ,\"  8,463.09 \",  169.26 ,  35.92 ,,,,,,,,,\nBROILER BREEDER LAYER 2 CRUMBLE A ( IR),,,,,,,,,,,,,,,,,,,,,,\"  62,737.82 \",\"  1,254.76 \",  34.72 ,\"  206,165.08 \",\"  4,123.30 \",  34.85 ,\"  219,635.18 \",\"  4,392.70 \",  34.84 ,\"  182,610.61 \",\"  3,652.21 \",  34.86 ,\"  3,151.31 \",  63.03 ,  34.71 \nBROILER BREEDER LAYER 3 CRUMBLE A (IR),,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\"  28,763.29 \",  575.27 ,  32.84 ,\"  211,669.28 \",\"  4,233.39 \",  32.71 \nBROILER BREEDER MALE CRUMBLE (IR),,,,,,,,,,,,,,,,\"  12,725.48 \",  254.51 ,  32.76 ,\"  21,593.10 \",  431.86 ,  33.32 ,\"  20,587.94 \",  411.76 ,  33.57 ,\"  19,391.76 \",  387.84 ,  34.16 ,\"  19,830.11 \",  396.60 ,  32.90 ,\"  18,671.08 \",  373.42 ,  33.01 ,\"  19,951.87 \",  399.04 ,  32.85 \nBROILER BREEDER STARTER CRUMBLE - IR (BBSC-IR),\"  15,957.65 \",  319.15 ,  40.66 ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\nBROILER BREEDER PRE-BREEDER CRUMBLE-IR,,,,,,,,,,\"  44,204.31 \",  884.09 ,  34.67 ,\"  152,147.24 \",\"  3,042.94 \",  34.86 ,\"  38,648.45 \",  772.97 ,  34.88 ,,,,,,,,,,,,,,,,,,\nCF - V1-KL,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\nBROILER BREEDER GROWER CRUMBLE - IR(BBGC- IR),,,,,,,,,,\"  36,410.45 \",  728.21 ,35.36,\"  93,173.65 \",\"  1,863.47 \",35.615,\"  108,953.04 \",\"  2,179.06 \",36.15,\"  150,627.87 \",\"  3,012.56 \",37.43,\"  39,564.77 \",  791.30 ,36.57,\"  11,070.22 \",  221.40 ,35.95,,,,,,,,,\nBROILER BREEDER LAYER 1 CRUMBLE (IR),,,,,,,,,,,,,,,,,,,,,,,,,\"  145,367.70 \",\"  2,907.35 \",35.92,\"  255,143.73 \",\"  5,102.87 \",35.05,\"  212,138.57 \",\"  4,242.77 \",35.25,,,\nBROILER BREEDER LAYER 2 CRUMBLE A ( IR),,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\"  26,122.25 \",  522.45 ,34.86,\"  235,090.61 \",\"  4,701.81 \",34.71\nBROILER BREEDER MALE CRUMBLE (IR),,,,,,,,,,,,,,,,,,,,,,,,,\"  12,294.87 \",  245.90 ,34.16,\"  26,045.40 \",  520.91 ,32.9,\"  23,208.48 \",  464.17 ,33.01,\"  23,079.82 \",  461.60 ,32.85\nBROILER BREEDER PRE-BREEDER CRUMBLE-IR,,,,,,,,,,,,,,,,,,,,,,\"  153,432.30 \",\"  3,068.65 \",  35.42 ,\"  46,767.70 \",  935.35 ,35.85,,,,,,,,,\nBROILER BREEDER STARTER CRUMBLE - IR (BBSC-IR),,,,,,,\"  21,093.43 \",  421.87 ,  40.60 ,\"  37,283.86 \",  745.68 ,  40.50 ,  72.71 ,  1.45 ,  40.75 ,,,,,,,,,,,,,,,,,,,,,\nCF - WF-KM,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\nBROILER BREEDER GROWER CRUMBLE-A ROSS(BBGC-A ROSS),,,,,,,,,,,,,,,,,,,,,,,,,,,,\"  8,967.07 \",  179.34 ,36.03,\"  48,460.45 \",  969.21 ,35.64,\"  93,505.15 \",\"  1,870.10 \",35.64\nBROILER BREEDER STARTER CRUMBLE 3MM - A ROSS(BBSC 3MM -A ROSS),,,,,,,,,,,,,,,,,,,,,,,,,,,,\"  9,000.00 \",  180.00 ,40.67,,,,,,\nBROILER BREEDER STARTER CRUMBLE 4MM - A ROSS(BBSC 4MM -A ROSS),,,,,,,,,,,,,,,,,,,,,,,,,,,,\"  27,811.01 \",  556.22 ,40.67,\"  11,088.99 \",  221.78 ,40.96,,,\nBagontaas Ranch,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\nCOW FEEDS MAINTENANCE -MASH,\"  5,000.00 \",  100.00 ,  25.39 ,\"  5,000.00 \",  100.00 ,  25.26 ,\"  5,000.00 \",  100.00 ,  25.26 ,\"  10,000.00 \",  200.00 ,  24.69 ,,,,,,,\"  1,500.00 \",  30.00 ,  26.14 ,\"  2,500.00 \",  50.00 ,  26.54 ,\"  2,500.00 \",  50.00 ,  26.37 ,\"  2,500.00 \",  50.00 ,  25.88 ,\"  4,000.00 \",  80.00 ,  25.78 ,\"  8,450.00 \",  169.00 ,  25.69 \nBROILER BREEDER GROWER CRUMBLE - IR(BBGC- IR),,,,,,,,,,,,,,,,,,,,,,,,,\"  1,750.00 \",  35.00 ,  35.95 ,,,,,,,,,\nBROILER BREEDER LAYER 1 CRUMBLE - B (COBB),,,,,,,,,,,,,,,,\"  2,050.00 \",  41.00 ,  34.93 ,,,,,,,,,,,,,,,,,,\nBROILER BREEDER LAYER 1 CRUMBLE (IR),,,,,,,,,,,,,,,,,,,,,,,,,,,,  50.00 ,  1.00 ,  35.05 ,,,,,,\nBROILER BREEDER LAYER 2 CRUMBLE - B (COBB),,,,,,,,,,,,,\"  25,000.00 \",  500.00 ,  33.46 ,\"  1,900.00 \",  38.00 ,  34.13 ,\"  5,200.00 \",  104.00 ,  34.44 ,\"  5,000.00 \",  100.00 ,  34.55 ,,,,,,,,,,,,\nBROILER BREEDER LAYER 2 CRUMBLE A ( IR),,,,,,,,,,,,,,,,,,,,,,,,,,,,  100.00 ,  2.00 ,  34.84 ,\"  2,500.00 \",  50.00 ,  34.86 ,,,\nBROILER BREEDER LAYER 1 CRUMBLE (IR) - COMMERCIAL,\"  1,200.00 \",  24.00 ,  35.30 ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\nBROILER BREEDER LAYER 3 CRUMBLE (IR) - COMMERCIAL,,,,,,,,,,\"  22,000.00 \",  440.00 ,  33.33 ,,,,,,,,,,,,,  300.00 ,  6.00 ,  34.81 ,,,,,,,,,\nBROILER BREEDER MALE CRUMBLE (IR),,,,,,,,,,,,,,,,,,,,,,\"  2,500.00 \",  50.00 ,  33.03 ,  450.00 ,  9.00 ,  34.16 ,,,,,,,,,\nBROILER BREEDER MALE CRUMBLE (IR) - COMMERCIAL,,,,,,,,,,\"  3,000.00 \",  60.00 ,  33.64 ,,,,,,,\"  6,050.00 \",  121.00 ,  33.64 ,,,,,,,,,,,,,,,\nBROILER BREEDER MALE CRUMBLE - B (COBB),,,,,,,,,,,,,,,,,,,\"  6,000.00 \",  120.00 ,  35.93 ,,,,,,,\"  2,700.00 \",  54.00 ,  35.58 ,,,,,,\nBROILER BREEDER STARTER CRUMBLE - IR (BBSC-IR),,,,,,,,,,,,,,,,\"  8,050.00 \",  161.00 ,  40.82 ,,,,,,,,,,,,,,,,,,\nLAYER 1 MASH (LOHMANN) - COMMERCIAL,  250.00 ,  5.00 ,  35.19 ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\nGILT DEVELOPER 1 PELLETS - COMMERCIAL (MED),  300.00 ,  6.00 ,  38.41 ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\nKalilangan Ranch,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\nCOW FEEDS MAINTENANCE -MASH,\"  8,850.00 \",  177.00 ,  25.39 ,\"  12,200.00 \",  244.00 ,  25.26 ,\"  12,950.00 \",  259.00 ,  25.26 ,\"  10,000.00 \",  200.00 ,  24.69 ,\"  12,500.00 \",  250.00 ,  24.88 ,\"  4,900.00 \",  98.00 ,  24.87 ,\"  4,000.00 \",  80.00 ,  26.14 ,\"  5,250.00 \",  105.00 ,  26.54 ,\"  9,650.00 \",  193.00 ,  26.37 ,\"  14,250.00 \",  285.00 ,  25.88 ,\"  11,600.00 \",  232.00 ,  25.78 ,\"  7,650.00 \",  153.00 ,  25.69 \nHOG PRE-STARTER PELLETS - COMMERCIAL,,,,  800.00 ,  16.00 ,  42.42 ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\nHOG GROWER PELLETS- COMMERCIAL (MED),,,,,,,,,,,,,\"  1,350.00 \",  27.00 ,  33.04 ,,,,,,,,,,,,,,,,,,,,,\nBROILER BREEDER GROWER CRUMBLE - IR(BBGC- IR),,,,,,,,,,,,,,,,,,,,,,,,,\"  2,000.00 \",  40.00 ,  35.95 ,,,,,,,,,\nBROILER BREEDER LAYER 1 CRUMBLE (IR),,,,,,,,,,,,,,,,,,,  350.00 ,  7.00 ,  35.39 ,  400.00 ,  8.00 ,  35.32 ,,,,,,,,,,,,\nBROILER BREEDER LAYER 1 CRUMBLE-A (BBL1C-A),,,,,,,,,,,,,,,,,,,,,,  50.00 ,  1.00 ,  34.93 ,,,,,,,,,,,,\nBROILER BREEDER LAYER 2 CRUMBLE (COBB),,,,,,,,,,,,,,,,,,,,,,  100.00 ,  2.00 ,  34.55 ,,,,,,,,,,,,\nBROILER BREEDER LAYER 2 CRUMBLE - B (COBB),,,,,,,,,,,,,,,,,,,\"  1,500.00 \",  30.00 ,  34.44 ,\"  5,000.00 \",  100.00 ,  34.55 ,,,,,,,,,,,,\nBROILER BREEDER LAYER 2 CRUMBLE A ( IR),,,,,,,,,,,,,,,,,,,,,,  850.00 ,  17.00 ,  34.72 ,,,,\"  2,500.00 \",  50.00 ,  34.84 ,\"  9,000.00 \",  180.00 ,  34.86 ,\"  5,000.00 \",  100.00 ,  34.71 \nBROILER BREEDER MALE CRUMBLE (IR),,,,,,,,,,,,,,,,,,,,,,\"  10,900.00 \",  218.00 ,  33.57 ,,,,,,,,,,,,\nBROILER BREEDER MALE CRUMBLE - B (COBB),,,,,,,,,,,,,,,,,,,\"  8,500.00 \",  170.00 ,  35.93 ,,,,,,,,,,,,,,,\nBROILER GROW OUT FINISHER 2 ( SASSO),\"  1,150.00 \",  23.00 ,  36.20 ,,,,,,,,,,\"  2,000.00 \",  40.00 ,  35.21 ,,,,,,,,,,,,,,,,,,,,,\nDUCK LAYER PELLETS - COMMERCIAL,,,,,,,,,,,,,,,,,,,,,,,,,  250.00 ,  5.00 ,  30.36 ,,,,,,,,,\nLAYER 1 MASH (LOHMANN) - COMMERCIAL,,,,,,,,,,,,,,,,,,,,,,  50.00 ,  1.00 ,  33.69 ,,,,,,,,,,,,\nPRE-LAYER MASH SHAVER-COMMERCIAL,,,,,,,,,,,,,,,,,,,,,,,,,\"  2,100.00 \",  42.00 ,  33.92 ,,,,,,,,,\nKinate Ranch,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\nCOW FEEDS MAINTENANCE -MASH,\"  19,900.00 \",  398.00 ,  25.39 ,\"  14,000.00 \",  280.00 ,  25.26 ,\"  20,000.00 \",  400.00 ,  25.26 ,\"  20,000.00 \",  400.00 ,  24.69 ,\"  25,600.00 \",  512.00 ,  24.88 ,\"  22,000.00 \",  440.00 ,  24.87 ,\"  23,000.00 \",  460.00 ,  26.14 ,\"  23,400.00 \",  468.00 ,  26.54 ,\"  30,100.00 \",  602.00 ,  26.37 ,\"  20,300.00 \",  406.00 ,  25.88 ,\"  25,150.00 \",  503.00 ,  25.78 ,\"  24,050.00 \",  481.00 ,  25.69 \nHORSE GROWER - PELLETS,,,,\"  1,050.00 \",  21.00 ,  21.80 ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\nStudfarm,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\nHORSE GROWER - PELLETS,\"  2,500.00 \",  50.00 ,  32.66 ,\"  1,000.00 \",  20.00 ,  21.80 ,\"  1,000.00 \",  20.00 ,  33.26 ,  250.00 ,  5.00 ,  32.94 ,\"  3,400.00 \",  68.00 ,  33.04 ,\"  1,750.00 \",  35.00 ,  32.94 ,\"  1,500.00 \",  30.00 ,  34.71 ,\"  1,750.00 \",  35.00 ,  35.41 ,\"  1,000.00 \",  20.00 ,  35.34 ,\"  2,750.00 \",  55.00 ,  34.69 ,\"  1,600.00 \",  32.00 ,  34.96 ,  900.00 ,  18.00 ,  34.64 \nHORSE MAINTENANCE- PELLETS,\"  13,000.00 \",  260.00 ,  27.87 ,\"  7,000.00 \",  140.00 ,  28.94 ,\"  8,000.00 \",  160.00 ,  29.56 ,\"  7,800.00 \",  156.00 ,  29.63 ,\"  7,950.00 \",  159.00 ,  30.74 ,\"  10,650.00 \",  213.00 ,  30.65 ,\"  11,500.00 \",  230.00 ,  32.38 ,\"  12,750.00 \",  255.00 ,  32.94 ,\"  6,300.00 \",  126.00 ,  32.79 ,\"  8,250.00 \",  165.00 ,  31.97 ,\"  8,500.00 \",  170.00 ,  32.19 ,\"  4,000.00 \",  80.00 ,  31.96 \nBROILER BREEDER LAYER 2 CRUMBLE - B (COBB),,,,,,,,,,,,,  50.00 ,  1.00 ,  33.46 ,,,,  50.00 ,  1.00 ,  34.44 ,,,,,,,,,,,,,,,\nBROILER GROW OUT STARTER CRUMBLE ( SASSO),,,,,,,,,,,,,,,,,,,  50.00 ,  1.00 ,  37.75 ,,,,,,,,,,,,,,,\nBROILER BREEDER PRE-BREEDER CRUMBLE-IR,,,,,,,,,,  50.00 ,  1.00 ,  34.67 ,,,,,,,,,,,,,,,,,,,,,,,,\n";
+const SNAPSHOT_DATE = "October 1, 2026";
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const GROUP_ORDER = ["Hog farms","Company poultry","Contract farms","Ranches & stud","Other"];
+const CAT_ORDER = ["Broiler breeder","Swine","Broiler","Cattle","Horse","Layer & duck","Other"];
+
+let ALL = [], TABS = [];
+const S = { sheet:"", year:null, from:0, to:11, group:"", farm:"", cat:"", q:"", metric:"sales", by:"feedfarm", sortKey:"sales", sortDir:-1, showAll:false };
+const charts = {};
+
+/* ---------- formatting ---------- */
+const nf0 = new Intl.NumberFormat("en-PH",{maximumFractionDigits:0});
+const nf1 = new Intl.NumberFormat("en-PH",{maximumFractionDigits:1,minimumFractionDigits:1});
+const nf2 = new Intl.NumberFormat("en-PH",{maximumFractionDigits:2,minimumFractionDigits:2});
+function compact(n){
+  const a=Math.abs(n);
+  if(a>=1e9) return nf2.format(n/1e9)+"B";
+  if(a>=1e6) return nf2.format(n/1e6)+"M";
+  if(a>=1e3) return nf1.format(n/1e3)+"K";
+  return nf0.format(n);
+}
+const peso = n => "₱"+compact(n);
+const tonnes = kg => (kg>=1e6?nf0:nf1).format(kg/1000)+" t";
+function fmtMetric(v,m=S.metric,short=true){
+  if(m==="sales") return short?peso(v):"₱"+nf0.format(v);
+  if(m==="kg") return short?tonnes(v):nf0.format(v)+" kg";
+  return short?compact(v):nf0.format(v);
+}
+const metricName = m => ({sales:"sales",kg:"volume",bags:"bags"})[m];
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ---------- data loading ---------- */
+const nowStr=()=>new Date().toLocaleString("en-PH",{dateStyle:"medium",timeStyle:"short"});
+function setStatus(kind,html){
+  document.getElementById("status").innerHTML = `<span class="dot ${kind==="live"?"":"snap"}"></span>${html}`;
+}
+/* sheets: [{name, rows|text}] -> records from every tab that uses the feeds layout */
+function applySheets(sheets,kind,label){
+  const recs=[], used=[], skipped=[];
+  for(const s of sheets){
+    let r=[];
+    try{ r=buildRecords(s.rows||s.text,s.name); }catch(e){}
+    if(r.length){ recs.push(...r); used.push(s.name); } else skipped.push(s.name);
+  }
+  if(!recs.length) throw new Error("No feed rows found in any tab. Tabs need the month headers (January to December) with Quantity, Bags and Price columns.");
+  ALL=recs; TABS=used;
+  const years=[...new Set(ALL.map(r=>r.y))].sort();
+  if(!years.includes(S.year)) S.year=years[years.length-1];
+  if(S.sheet && !TABS.includes(S.sheet)) S.sheet="";
+  const tabTxt=`${used.length} tab${used.length>1?"s":""} read (${used.map(esc).join(", ")})`+(skipped.length?`. Skipped ${skipped.length} without feed data: ${skipped.map(esc).join(", ")}`:"");
+  setStatus(kind,label+". "+tabTxt+".");
+  document.getElementById("footSrc").innerHTML="Tabs in use: "+used.map(esc).join(", ")+(skipped.length?". Tabs skipped because they don't follow the feeds layout: "+skipped.map(esc).join(", "):"")+".";
+  initFilters(); render();
+}
+function workbookSheets(wb){
+  return wb.SheetNames.map(n=>({name:n,rows:XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:false,defval:"",blankrows:true})}));
+}
+async function fetchT(url,type){
+  const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),15000);
+  try{
+    const res=await fetch(url+(url.includes("?")?"&":"?")+"t="+Date.now(),{signal:ctl.signal,cache:"no-store"});
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    return type==="buf"?await res.arrayBuffer():await res.text();
+  }finally{clearTimeout(t);}
+}
+async function loadLive(){
+  setStatus("snap","Reading the whole Google Sheet workbook");
+  // 1) whole workbook (every tab) as .xlsx
+  if(typeof XLSX!=="undefined"){
+    try{
+      const buf=await fetchT(SHEET_BASE+"?output=xlsx","buf");
+      const wb=XLSX.read(buf,{type:"array"});
+      applySheets(workbookSheets(wb),"live",`<b>Live</b> from the Google Sheet, pulled ${nowStr()}`);
+      return true;
+    }catch(e){ console.warn("Workbook download failed",e); }
+  }
+  // 2) fallback: tabs listed in EXTRA_TABS by gid, plus the first tab
+  try{
+    const sheets=[{name:"First tab",text:await fetchT(SHEET_BASE+"?output=csv")}];
+    for(const [name,gid] of EXTRA_TABS){
+      try{ sheets.push({name,text:await fetchT(`${SHEET_BASE}?gid=${gid}&single=true&output=csv`)}); }catch(e){}
+    }
+    applySheets(sheets,"live",`<b>Live</b> from the Google Sheet (CSV mode), pulled ${nowStr()}`);
+    return true;
+  }catch(e){ return false; }
+}
+function loadSaved(){
+  try{
+    const o=JSON.parse(localStorage.getItem("mmfi-feeds-book")||"null");
+    if(o){ applySheets(o.sheets,"snap",`Showing <b>${esc(o.name)}</b>, loaded ${esc(o.when)}; the live sheet couldn't be reached`); return true; }
+  }catch(e){}
+  return false;
+}
+function loadSnapshot(){
+  applySheets([{name:"Inhouse Feeds Summary (saved copy)",text:SNAPSHOT}],"snap",`Showing a saved copy from <b>${SNAPSHOT_DATE}</b>; the live sheet couldn't be reached. Use Load file for newer data`);
+}
+async function boot(){
+  if(await loadLive()) return;
+  if(loadSaved()) return;
+  loadSnapshot();
+}
+document.getElementById("refreshBtn").onclick = async ()=>{ if(!(await loadLive())){ if(!loadSaved()) loadSnapshot(); } };
+document.getElementById("loadBtn").onclick = ()=>document.getElementById("fileIn").click();
+document.getElementById("fileIn").onchange = e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const isBook=/\.(xlsx|xlsm|xls|ods)$/i.test(f.name);
+  const rd=new FileReader();
+  rd.onload=()=>{
+    try{
+      let sheets;
+      if(isBook){
+        if(typeof XLSX==="undefined") throw new Error("the Excel reader didn't load; check your internet connection");
+        sheets=workbookSheets(XLSX.read(rd.result,{type:"array"}));
+      } else sheets=[{name:f.name.replace(/\.csv$/i,""),text:rd.result}];
+      const when=nowStr();
+      applySheets(sheets,"snap",`Showing <b>${esc(f.name)}</b>, loaded ${when}`);
+      try{ localStorage.setItem("mmfi-feeds-book",JSON.stringify({sheets,name:f.name,when})); }catch(err){}
+    }catch(err){ setStatus("snap",`That file couldn't be read: ${esc(err.message)}`); }
+  };
+  isBook?rd.readAsArrayBuffer(f):rd.readAsText(f);
+  e.target.value="";
+};
+
+/* ---------- filters ---------- */
+function opts(el,items,allLabel,val){
+  el.innerHTML=(allLabel?`<option value="">${allLabel}</option>`:"")+items.map(([v,l])=>`<option value="${esc(v)}">${esc(l)}</option>`).join("");
+  el.value=val??"";
+}
+function initFilters(){
+  opts(fSheet,TABS.map(n=>[n,n]),"All tabs",S.sheet);
+  document.getElementById("fSheet").parentElement.hidden=TABS.length<2;
+  const years=[...new Set(ALL.map(r=>r.y))].sort();
+  opts(fYear,years.map(y=>[y,y]),null,S.year);
+  opts(fFrom,MON.map((m,i)=>[i,m]),null,S.from);
+  opts(fTo,MON.map((m,i)=>[i,m]),null,S.to);
+  syncDependent();
+}
+function syncDependent(){
+  const inYear=ALL.filter(r=>r.y===S.year&&(!S.sheet||r.sheet===S.sheet));
+  const groups=GROUP_ORDER.filter(g=>inYear.some(r=>r.group===g));
+  if(S.group && !groups.includes(S.group)) S.group="";
+  opts(fGroup,groups.map(g=>[g,g]),"All groups",S.group);
+  const farms=[...new Set(inYear.filter(r=>!S.group||r.group===S.group).map(r=>r.farm))];
+  if(S.farm && !farms.includes(S.farm)) S.farm="";
+  opts(fFarm,farms.map(f=>[f,f]),"All farms",S.farm);
+  const cats=CAT_ORDER.filter(c=>inYear.some(r=>r.cat===c));
+  if(S.cat && !cats.includes(S.cat)) S.cat="";
+  opts(fCat,cats.map(c=>[c,c]),"All feed lines",S.cat);
+  fFrom.value=S.from; fTo.value=S.to; fSearch.value=S.q;
+}
+const fSheet=document.getElementById("fSheet"),fYear=document.getElementById("fYear"),fFrom=document.getElementById("fFrom"),fTo=document.getElementById("fTo"),
+  fGroup=document.getElementById("fGroup"),fFarm=document.getElementById("fFarm"),fCat=document.getElementById("fCat"),fSearch=document.getElementById("fSearch");
+fSheet.onchange=()=>{S.sheet=fSheet.value;const ys=[...new Set(ALL.filter(r=>!S.sheet||r.sheet===S.sheet).map(r=>r.y))].sort();if(!ys.includes(S.year)){S.year=ys[ys.length-1];fYear.value=S.year;}syncDependent();render();};
+fYear.onchange=()=>{S.year=+fYear.value;syncDependent();render();};
+fFrom.onchange=()=>{S.from=+fFrom.value;if(S.to<S.from)S.to=S.from;fTo.value=S.to;render();};
+fTo.onchange=()=>{S.to=+fTo.value;if(S.from>S.to)S.from=S.to;fFrom.value=S.from;render();};
+fGroup.onchange=()=>{S.group=fGroup.value;syncDependent();render();};
+fFarm.onchange=()=>{S.farm=fFarm.value;render();};
+fCat.onchange=()=>{S.cat=fCat.value;render();};
+let qT; fSearch.oninput=()=>{clearTimeout(qT);qT=setTimeout(()=>{S.q=fSearch.value.trim();S.showAll=false;render();},180);};
+document.querySelectorAll("[data-metric]").forEach(b=>b.onclick=()=>{
+  S.metric=b.dataset.metric; S.sortKey=S.metric;
+  document.querySelectorAll("[data-metric]").forEach(x=>x.setAttribute("aria-pressed",x===b));
+  render();
+});
+document.querySelectorAll("[data-by]").forEach(b=>b.onclick=()=>{
+  S.by=b.dataset.by; document.querySelectorAll("[data-by]").forEach(x=>x.setAttribute("aria-pressed",x===b)); S.showAll=false; renderTable(filtered());
+});
+document.getElementById("resetBtn").onclick=()=>{Object.assign(S,{sheet:"",from:0,to:11,group:"",farm:"",cat:"",q:"",showAll:false});syncDependent();render();};
+document.getElementById("moreBtn").onclick=()=>{S.showAll=true;renderTable(filtered());};
+
+function matchQ(r){
+  if(!S.q) return true;
+  const hay=(r.feed+" "+r.farm).toLowerCase();
+  return S.q.toLowerCase().split(/\s+/).every(t=>hay.includes(t));
+}
+/* base = everything except month range (for monthly charts) */
+function scope(){ return ALL.filter(r=>(!S.sheet||r.sheet===S.sheet)&&(!S.group||r.group===S.group)&&(!S.farm||r.farm===S.farm)&&(!S.cat||r.cat===S.cat)&&matchQ(r)); }
+function base(){ return ALL.filter(r=>r.y===S.year&&(!S.sheet||r.sheet===S.sheet)&&(!S.group||r.group===S.group)&&(!S.farm||r.farm===S.farm)&&(!S.cat||r.cat===S.cat)&&matchQ(r)); }
+function filtered(){ return base().filter(r=>r.m>=S.from&&r.m<=S.to); }
+const val=(r,m=S.metric)=>r[m];
+function sumBy(rows,keyFn,m=S.metric){const o=new Map();for(const r of rows){const k=keyFn(r);o.set(k,(o.get(k)||0)+val(r,m));}return o;}
+
+function renderChips(){
+  const c=[];
+  if(S.from!==0||S.to!==11) c.push(["month",S.from===S.to?MON[S.from]:`${MON[S.from]} to ${MON[S.to]}`]);
+  if(S.sheet) c.push(["sheet","Tab: "+S.sheet]);
+  if(S.group) c.push(["group",S.group]);
+  if(S.farm) c.push(["farm",S.farm]);
+  if(S.cat) c.push(["cat",S.cat]);
+  if(S.q) c.push(["q",`"${S.q}"`]);
+  const el=document.getElementById("chips");
+  el.innerHTML=c.map(([k,l])=>`<button class="chip" data-k="${k}" aria-label="Remove filter ${esc(l)}">${esc(l)}</button>`).join("");
+  el.querySelectorAll(".chip").forEach(b=>b.onclick=()=>{
+    const k=b.dataset.k;
+    if(k==="month"){S.from=0;S.to=11;} else if(k==="q") S.q=""; else S[k]="";
+    syncDependent(); render();
+  });
+}
+
+/* ---------- KPIs ---------- */
+function renderKPIs(rows,baseRows){
+  const sales=rows.reduce((a,r)=>a+r.sales,0), kg=rows.reduce((a,r)=>a+r.kg,0), bags=rows.reduce((a,r)=>a+r.bags,0);
+  const months=new Set(rows.map(r=>r.m)).size||1;
+  const big=document.getElementById("bigVal");
+  const m=S.metric;
+  document.getElementById("bigLbl").textContent = ({sales:"Feed sales",kg:"Volume sold",bags:"Bags sold"})[m]+", "+(S.from===S.to?MON[S.from]:`${MON[S.from]} to ${MON[S.to]}`)+" "+S.year;
+  const tot = m==="sales"?sales:m==="kg"?kg:bags;
+  big.innerHTML = m==="sales" ? `<span class="cur">₱</span>${compact(sales)}` : m==="kg" ? `${nf0.format(kg/1000)}<span style="font-size:.45em;margin-left:4px">tonnes</span>` : `${nf0.format(bags)}`;
+  big.title = fmtMetric(tot,m,false);
+  // month-over-month for last month in range
+  const byM=sumBy(baseRows,r=>r.m);
+  const last=S.to, prev=S.to-1;
+  let note=`About <b>${fmtMetric(tot/months,m)}</b> a month across ${months} month${months>1?"s":""}.`;
+  if(prev>=0 && byM.get(prev)){
+    const ch=((byM.get(last)||0)-byM.get(prev))/byM.get(prev)*100;
+    note+=` ${MON[last]} was <b>${ch>=0?"up":"down"} ${nf1.format(Math.abs(ch))}%</b> on ${MON[prev]}.`;
+  }
+  document.getElementById("bigNote").innerHTML=rows.length?note:"No sales match these filters.";
+  document.getElementById("kVol").textContent=tonnes(kg);
+  document.getElementById("kVolS").textContent=nf0.format(kg)+" kg";
+  document.getElementById("kBags").textContent=nf0.format(bags);
+  document.getElementById("kBagsS").textContent=nf0.format(bags/months)+" a month";
+  document.getElementById("kPrice").textContent=kg?"₱"+nf2.format(sales/kg):"–";
+  const prices=rows.map(r=>r.price).filter(Boolean);
+  document.getElementById("kPriceS").textContent=prices.length?`Range ₱${nf2.format(Math.min(...prices))} to ₱${nf2.format(Math.max(...prices))}`:"";
+  const farmS=sumBy(rows,r=>r.farm);
+  const topFarm=[...farmS].sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById("kFarms").textContent=farmS.size;
+  document.getElementById("kFarmsS").textContent=topFarm?`Top: ${topFarm[0]}`:"";
+  const feedS=sumBy(rows,r=>r.feed);
+  const topFeed=[...feedS].sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById("kFeeds").textContent=feedS.size;
+  const kf=document.getElementById("kFeedsS"); kf.textContent=topFeed?`Top: ${topFeed[0]}`:""; kf.title=kf.textContent;
+  kf.style.cssText="white-space:nowrap;overflow:hidden;text-overflow:ellipsis";
+  document.getElementById("kFarmsS").style.cssText=kf.style.cssText;
+
+  // spark
+  const max=Math.max(1,...MON.map((_,i)=>byM.get(i)||0));
+  const sp=document.getElementById("spark");
+  sp.innerHTML=MON.map((mn,i)=>{
+    const v=byM.get(i)||0, h=Math.max(2,v/max*60);
+    const off=i<S.from||i>S.to;
+    return `<button type="button" class="${off?"off":""}" data-m="${i}" title="${mn}: ${fmtMetric(v,m,false)}" aria-label="${mn} ${fmtMetric(v,m,false)}"><i style="height:${h}px"></i><span>${mn}</span></button>`;
+  }).join("");
+  sp.querySelectorAll("button").forEach(b=>b.onclick=()=>focusMonth(+b.dataset.m));
+}
+function focusMonth(i){
+  if(S.from===i&&S.to===i){S.from=0;S.to=11;} else {S.from=i;S.to=i;}
+  fFrom.value=S.from; fTo.value=S.to; render();
+}
+
+/* ---------- charts ---------- */
+function palette(){
+  return {olive:css("--olive"),olive2:css("--olive-2"),grain:css("--grain"),teal:css("--teal"),plum:css("--plum"),sand:css("--sand"),rule:css("--rule"),muted:css("--muted"),ink:css("--ink"),panel:css("--panel")};
+}
+function groupColor(g,p){return {"Hog farms":p.grain,"Company poultry":p.olive,"Contract farms":p.olive2,"Ranches & stud":p.teal,"Other":p.sand}[g]||p.sand;}
+function catColor(c,p){return {"Broiler breeder":p.olive,"Swine":p.grain,"Broiler":p.olive2,"Cattle":p.teal,"Horse":p.plum,"Layer & duck":p.sand,"Other":p.muted}[c]||p.muted;}
+function mk(id,cfg){
+  if(charts[id]){charts[id].destroy();}
+  charts[id]=new Chart(document.getElementById(id),cfg);
+}
+function baseOpts(p){
+  return {responsive:true,maintainAspectRatio:false,animation:{duration:250},
+    plugins:{legend:{labels:{color:p.muted,boxWidth:12,boxHeight:12,font:{family:"Barlow",size:12}}},
+      tooltip:{backgroundColor:"#000",titleFont:{family:"Barlow",weight:"600"},bodyFont:{family:"Barlow"},padding:10}},
+    scales:{x:{grid:{display:false},ticks:{color:p.muted,font:{family:"Barlow"}}},y:{grid:{color:p.rule},border:{display:false},ticks:{color:p.muted,font:{family:"Barlow"},callback:v=>fmtMetric(v)}}}};
+}
+function renderCharts(rows,baseRows){
+  if(typeof Chart==="undefined") return;
+  const p=palette();
+  Chart.defaults.font.family="Barlow";
+  const m=S.metric;
+
+  // trend
+  const byM=sumBy(baseRows,r=>r.m), kgM=sumBy(baseRows,r=>r.m,"kg"), salM=sumBy(baseRows,r=>r.m,"sales");
+  const o=baseOpts(p);
+  o.scales.y2={position:"right",grid:{display:false},border:{display:false},ticks:{color:p.muted,callback:v=>"₱"+nf1.format(v)}};
+  o.plugins.tooltip.callbacks={label:c=>c.dataset.yAxisID==="y2"?` Avg price ₱${nf2.format(c.raw)}/kg`:` ${fmtMetric(c.raw,m,false)}`};
+  o.onClick=(e,els)=>{if(els.length) focusMonth(els[0].index);};
+  o.onHover=(e,els)=>{e.native.target.style.cursor=els.length?"pointer":"default";};
+  mk("cTrend",{data:{labels:MON,datasets:[
+    {type:"bar",label:({sales:"Sales",kg:"Volume",bags:"Bags"})[m],data:MON.map((_,i)=>byM.get(i)||0),
+      backgroundColor:MON.map((_,i)=>i<S.from||i>S.to?p.rule:p.olive2),borderRadius:4,order:2},
+    {type:"line",label:"Avg price per kg",yAxisID:"y2",data:MON.map((_,i)=>kgM.get(i)?salM.get(i)/kgM.get(i):null),
+      borderColor:p.grain,backgroundColor:p.grain,pointRadius:3,tension:.3,borderWidth:2,order:1,spanGaps:true}
+  ]},options:o});
+
+  // group donut
+  const gS=sumBy(rows,r=>r.group); const gK=GROUP_ORDER.filter(g=>gS.get(g));
+  const gTot=[...gS.values()].reduce((a,b)=>a+b,0);
+  document.getElementById("groupSub").textContent=`Share of ${metricName(m)} in the selected period.`;
+  mk("cGroup",{type:"doughnut",data:{labels:gK,datasets:[{data:gK.map(g=>gS.get(g)),backgroundColor:gK.map(g=>groupColor(g,p)),borderColor:p.panel,borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:"62%",animation:{duration:250},
+      plugins:{legend:{position:"bottom",labels:{color:p.muted,boxWidth:12,boxHeight:12,padding:12}},
+        tooltip:{backgroundColor:"#000",callbacks:{label:c=>` ${fmtMetric(c.raw,m,false)} (${nf1.format(c.raw/gTot*100)}%)`}}},
+      onClick:(e,els)=>{if(els.length){const g=gK[els[0].index];S.group=S.group===g?"":g;syncDependent();render();}},
+      onHover:(e,els)=>{e.native.target.style.cursor=els.length?"pointer":"default";}}});
+
+  // farms ranked
+  const fS=[...sumBy(rows,r=>r.farm)].sort((a,b)=>b[1]-a[1]);
+  const farmGroup=new Map(rows.map(r=>[r.farm,r.group]));
+  document.getElementById("farmSub").textContent=`${fS.length} farm${fS.length===1?"":"s"} by ${metricName(m)}, colored by farm group.`;
+  const fo=baseOpts(p); fo.indexAxis="y";
+  fo.scales={x:{grid:{color:p.rule},border:{display:false},ticks:{color:p.muted,callback:v=>fmtMetric(v)}},y:{grid:{display:false},ticks:{color:p.ink,font:{family:"Barlow",size:12}}}};
+  fo.plugins.legend={display:false};
+  fo.plugins.tooltip.callbacks={label:c=>` ${fmtMetric(c.raw,m,false)}`};
+  fo.onClick=(e,els)=>{if(els.length){const f=fS[els[0].index][0];S.farm=S.farm===f?"":f;syncDependent();render();}};
+  fo.onHover=(e,els)=>{e.native.target.style.cursor=els.length?"pointer":"default";};
+  mk("cFarm",{type:"bar",data:{labels:fS.map(x=>x[0]),datasets:[{data:fS.map(x=>x[1]),backgroundColor:fS.map(x=>groupColor(farmGroup.get(x[0]),p)),borderRadius:3,maxBarThickness:22}]},options:fo});
+
+  // top feeds
+  const feedS=[...sumBy(rows,r=>r.feed)].sort((a,b)=>b[1]-a[1]).slice(0,12);
+  const feedCat=new Map(rows.map(r=>[r.feed,r.cat]));
+  document.getElementById("feedSub").textContent=`Top ${feedS.length} by ${metricName(m)}, colored by feed line.`;
+  const to=baseOpts(p); to.indexAxis="y";
+  to.scales={x:{grid:{color:p.rule},border:{display:false},ticks:{color:p.muted,callback:v=>fmtMetric(v)}},
+    y:{grid:{display:false},ticks:{color:p.ink,font:{family:"Barlow",size:11.5},callback:function(v){const l=this.getLabelForValue(v);return l.length>34?l.slice(0,33)+"…":l;}}}};
+  to.plugins.legend={display:false};
+  to.plugins.tooltip.callbacks={label:c=>` ${fmtMetric(c.raw,m,false)}`};
+  mk("cFeed",{type:"bar",data:{labels:feedS.map(x=>x[0]),datasets:[{data:feedS.map(x=>x[1]),backgroundColor:feedS.map(x=>catColor(feedCat.get(x[0]),p)),borderRadius:3,maxBarThickness:22}]},options:to});
+
+  // mix stacked
+  const cats=CAT_ORDER.filter(c=>baseRows.some(r=>r.cat===c));
+  document.getElementById("mixSub").textContent=`${metricName(m)[0].toUpperCase()+metricName(m).slice(1)} per month, split by feed line.`;
+  const mo=baseOpts(p); mo.scales.x.stacked=true; mo.scales.y.stacked=true;
+  mo.plugins.legend.position="bottom";
+  mo.plugins.tooltip.callbacks={label:c=>` ${c.dataset.label}: ${fmtMetric(c.raw,m,false)}`};
+  mk("cMix",{type:"bar",data:{labels:MON,datasets:cats.map(c=>{const s=sumBy(baseRows.filter(r=>r.cat===c),r=>r.m);return {label:c,data:MON.map((_,i)=>s.get(i)||0),backgroundColor:catColor(c,p),borderRadius:2};})},options:mo});
+
+  // price by cat
+  const po=baseOpts(p); po.scales.y.ticks.callback=v=>"₱"+nf0.format(v); po.plugins.legend.position="bottom";
+  po.plugins.tooltip.callbacks={label:c=>` ${c.dataset.label}: ₱${nf2.format(c.raw)}/kg`};
+  mk("cPrice",{type:"line",data:{labels:MON,datasets:cats.map(c=>{const rs=baseRows.filter(r=>r.cat===c);const k=sumBy(rs,r=>r.m,"kg"),s=sumBy(rs,r=>r.m,"sales");
+    return {label:c,data:MON.map((_,i)=>k.get(i)?s.get(i)/k.get(i):null),borderColor:catColor(c,p),backgroundColor:catColor(c,p),pointRadius:2.5,borderWidth:2,tension:.25,spanGaps:true};})},options:po});
+}
+
+/* ---------- heatmap ---------- */
+function renderHeat(baseRows){
+  const m=S.metric;
+  const farms=new Map(); for(const r of baseRows){ if(!farms.has(r.farm)) farms.set(r.farm,r.group); }
+  const cell=new Map(); let max=0;
+  for(const r of baseRows){const k=r.farm+"|"+r.m;const v=(cell.get(k)||0)+val(r);cell.set(k,v);}
+  for(const v of cell.values()) max=Math.max(max,v);
+  document.getElementById("heatSub").textContent=`${metricName(m)[0].toUpperCase()+metricName(m).slice(1)} for each farm and month. Darker cells mean more. Select a farm name to filter by it.`;
+  const el=document.getElementById("heat");
+  if(!farms.size){el.innerHTML=`<tbody><tr><td class="empty">No sales match these filters.</td></tr></tbody>`;return;}
+  let h=`<thead><tr><th></th>${MON.map(x=>`<th scope="col">${x}</th>`).join("")}<th class="tot" scope="col">Total</th></tr></thead><tbody>`;
+  const colTot=Array(12).fill(0); let grand=0;
+  for(const g of GROUP_ORDER){
+    const fs=[...farms].filter(([,gg])=>gg===g).map(([f])=>f);
+    if(!fs.length) continue;
+    h+=`<tr class="grp"><th colspan="14">${esc(g)}</th></tr>`;
+    for(const f of fs){
+      let t=0;
+      h+=`<tr><th scope="row" data-farm="${esc(f)}">${esc(f)}</th>`;
+      for(let i=0;i<12;i++){
+        const v=cell.get(f+"|"+i)||0; t+=v; colTot[i]+=v;
+        const pct=v?Math.round(8+Math.pow(v/max,.6)*84):0;
+        const dim=(i<S.from||i>S.to)?"opacity:.35;":"";
+        const bg=v?`background:color-mix(in srgb,var(--olive) ${pct}%,var(--panel));color:${pct>52?"#fff":"var(--ink)"};`:"color:var(--rule);";
+        h+=`<td style="${bg}${dim}" title="${esc(f)}, ${MON[i]}: ${fmtMetric(v,m,false)}">${v?fmtMetric(v).replace("₱",""):"·"}</td>`;
+      }
+      grand+=t;
+      h+=`<td class="tot">${fmtMetric(t)}</td></tr>`;
+    }
+  }
+  h+=`</tbody><tfoot><tr><th class="tot" style="text-align:left;padding:8px 0">All farms</th>${colTot.map(v=>`<td class="tot">${fmtMetric(v).replace("₱","")}</td>`).join("")}<td class="tot">${fmtMetric(grand)}</td></tr></tfoot>`;
+  el.innerHTML=h;
+  el.querySelectorAll("th[data-farm]").forEach(th=>th.onclick=()=>{const f=th.dataset.farm;S.farm=S.farm===f?"":f;syncDependent();render();});
+}
+
+/* ---------- table ---------- */
+function renderTable(rows){
+  const byFarm=S.by==="feedfarm";
+  const map=new Map();
+  for(const r of rows){
+    const k=byFarm?r.feed+"|"+r.farm:r.feed;
+    let o=map.get(k); if(!o){o={feed:r.feed,farm:byFarm?r.farm:"",cat:r.cat,kg:0,bags:0,sales:0,months:new Set(),farms:new Set()};map.set(k,o);}
+    o.kg+=r.kg;o.bags+=r.bags;o.sales+=r.sales;o.months.add(r.m);o.farms.add(r.farm);
+  }
+  let list=[...map.values()].map(o=>({...o,price:o.kg?o.sales/o.kg:0,nm:o.months.size,nf:o.farms.size}));
+  const tot={kg:0,bags:0,sales:0}; list.forEach(o=>{tot.kg+=o.kg;tot.bags+=o.bags;tot.sales+=o.sales;});
+  const k=S.sortKey, d=S.sortDir;
+  list.sort((a,b)=>typeof a[k]==="string"?d*a[k].localeCompare(b[k]):d*(a[k]-b[k]));
+  const cols=[["feed","Feed type"],[byFarm?"farm":"nf",byFarm?"Farm":"Farms"],["kg","Volume (kg)"],["bags","Bags"],["sales","Sales"],["price","Avg ₱/kg"],["nm","Months"]];
+  document.getElementById("tblSub").textContent=`${list.length} row${list.length===1?"":"s"}. Select a column heading to sort.`;
+  const shown=S.showAll?list:list.slice(0,60);
+  const shareKey=S.metric, shareTot=tot[shareKey]||1;
+  const el=document.getElementById("tbl");
+  if(!list.length){el.innerHTML=`<tbody><tr><td class="empty">No feed types match these filters. Try clearing the search or widening the month range.</td></tr></tbody>`;document.getElementById("moreBtn").hidden=true;return;}
+  el.innerHTML=`<thead><tr>${cols.map(([key,l])=>`<th scope="col" data-k="${key}" aria-sort="${key===k?(d<0?"descending":"ascending"):"none"}" tabindex="0">${l}</th>`).join("")}</tr></thead>
+  <tbody>${shown.map(o=>`<tr><td class="feed">${esc(o.feed)}</td><td class="farmc">${byFarm?esc(o.farm):o.nf}</td><td>${nf0.format(o.kg)}</td><td>${nf1.format(o.bags)}</td><td>₱${nf0.format(o.sales)}<span class="share" title="${nf1.format(o[shareKey]/shareTot*100)}% of ${metricName(shareKey)}"><i style="width:${Math.min(100,o[shareKey]/shareTot*100*3)}%"></i></span></td><td>${nf2.format(o.price)}</td><td>${o.nm}</td></tr>`).join("")}</tbody>
+  <tfoot><tr><td>Total</td><td></td><td>${nf0.format(tot.kg)}</td><td>${nf1.format(tot.bags)}</td><td>₱${nf0.format(tot.sales)}</td><td>${tot.kg?nf2.format(tot.sales/tot.kg):""}</td><td></td></tr></tfoot>`;
+  el.querySelectorAll("th").forEach(th=>{
+    const go=()=>{const key=th.dataset.k; if(S.sortKey===key) S.sortDir*=-1; else {S.sortKey=key;S.sortDir=(key==="feed"||key==="farm")?1:-1;} renderTable(filtered());};
+    th.onclick=go; th.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go();}};
+  });
+  const more=document.getElementById("moreBtn"); more.hidden=S.showAll||list.length<=60; more.textContent=`Show all ${list.length} rows`;
+}
+
+
+/* ---------- year over year ---------- */
+function renderYoY(){
+  const panel=document.getElementById("yoyPanel");
+  const rows=scope(); const years=[...new Set(rows.map(r=>r.y))].sort();
+  if(years.length<2){ panel.hidden=true; if(charts.cYoy){charts.cYoy.destroy();delete charts.cYoy;} return; }
+  panel.hidden=false;
+  const m=S.metric, p=palette();
+  const cols=[p.sand,p.teal,p.grain,p.plum,p.olive2,p.olive];
+  document.getElementById("yoySub").textContent=`${metricName(m)[0].toUpperCase()+metricName(m).slice(1)} per month for each year, using the same filters except year and month range.`;
+  const o=baseOpts(p); o.plugins.legend.position="bottom";
+  o.plugins.tooltip.callbacks={label:c=>` ${c.dataset.label}: ${fmtMetric(c.raw,m,false)}`};
+  if(typeof Chart!=="undefined") mk("cYoy",{type:"line",data:{labels:MON,datasets:years.map((y,k)=>{const s=sumBy(rows.filter(r=>r.y===y),r=>r.m);const c=cols[(cols.length-years.length+k+cols.length)%cols.length];
+    return {label:String(y),data:MON.map((_,i)=>s.has(i)?s.get(i):null),borderColor:c,backgroundColor:c,borderWidth:y===S.year?3:1.5,pointRadius:y===S.year?3:1.5,tension:.25,spanGaps:false};})},options:o});
+  const tot=years.map(y=>{const rs=rows.filter(r=>r.y===y);return {y,sales:rs.reduce((a,r)=>a+r.sales,0),kg:rs.reduce((a,r)=>a+r.kg,0),bags:rs.reduce((a,r)=>a+r.bags,0),mo:new Set(rs.map(r=>r.m)).size};});
+  document.getElementById("yoyTbl").innerHTML=`<thead><tr><th>Year</th><th>Months with data</th><th>Sales</th><th>Volume (kg)</th><th>Bags</th><th>Avg ₱/kg</th><th>Change in ${metricName(m)}</th></tr></thead><tbody>${tot.map((t,i)=>{
+    const pr=tot[i-1]; let ch="";
+    if(pr&&pr[m]){const d=(t[m]-pr[m])/pr[m]*100; ch=`<span class="${d>=0?"up":"down"}">${d>=0?"+":"−"}${nf1.format(Math.abs(d))}%</span>`;}
+    return `<tr><td>${t.y}</td><td>${t.mo}</td><td>₱${nf0.format(t.sales)}</td><td>${nf0.format(t.kg)}</td><td>${nf1.format(t.bags)}</td><td>${t.kg?nf2.format(t.sales/t.kg):""}</td><td>${ch}</td></tr>`;}).join("")}</tbody>`;
+  if(tot.some(t=>t.mo<12)) document.getElementById("yoySub").textContent+=" Years with fewer than 12 months of data aren't a like-for-like comparison.";
+}
+
+function render(){
+  const b=base(), rows=b.filter(r=>r.m>=S.from&&r.m<=S.to);
+  renderChips(); renderKPIs(rows,b); renderCharts(rows,b); renderYoY(); renderHeat(b); renderTable(rows);
+}
+
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change",()=>{ if(ALL.length){ renderCharts(filtered(),base()); renderYoY(); } });
+let rT; window.addEventListener("resize",()=>{clearTimeout(rT);rT=setTimeout(()=>Object.values(charts).forEach(c=>c.resize()),150);});
+boot();
+</script>
+</body>
+</html>
